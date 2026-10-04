@@ -1,5 +1,12 @@
 # Volty
 
+**Volty demo: https://volty-demo.fly.dev/**  
+**Artifacts folder: https://drive.google.com/drive/folders/1vbqW8b2CV9ltiMsMeulIYvEvvXsGVw33?usp=drive_link**  
+**Volty pitch deck: https://docs.google.com/presentation/d/186qZuUo_IH702d5M_VmfL7xD2e5Zy7FWi3DHOgaPwQo/edit?usp=drive_link**  
+**Volty presentation: https://docs.google.com/videos/d/1wA9bhb2Bx1MJo5Vtm8tEgPh-HTe1ExutXuphdJKRvfs/edit?usp=drive_link**  
+**Volty short demo run: https://docs.google.com/videos/d/1L8Rs9VCJGycKlPt8rmuUnacCB9BLnbhbZ8jZnGv9_cM/edit?usp=drive_link**  
+**Volty long demo run: https://docs.google.com/videos/d/12LyXiXgRSIVxkVLi-fdtCVWp3AhM9I6TbYqUbWr9U0Y/edit?usp=drive_link**
+
 Neighbourhood energy sharing with 15-minute settlement on Solana. Households and small businesses in one grid area share rooftop solar under §42c EnWG. Every hour, buyers pay their neighbours and their roof's investors directly in euro stablecoins, from wallets they control, within a spending limit they set and can revoke. Roofs funded through **Solar Now, Pay Never** repay their investors through an on-chain program, and every hour's trades are published with a hash on Solana that anyone can check. Where the law requires the supplier to settle (Germany's default under §42c), the Stadtwerk pays sellers instead, on the same rails.
 
 ## Why Solana
