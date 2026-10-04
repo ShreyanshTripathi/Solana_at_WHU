@@ -1,0 +1,18 @@
+[package]
+name = "kiezwatt-roof-split"
+version = "0.1.0"
+edition = "2021"
+description = "KiezWatt Solar Now, Pay Never: splits every payment to a funded roof on-chain"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+no-entrypoint = []
+
+[dependencies]
+solana-program = "2.2"
+
+[lints.rust]
+unexpected_cfgs = { level = "allow" }
