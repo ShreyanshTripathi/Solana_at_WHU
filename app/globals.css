@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+/* Chart tokens (dataviz reference palette), light then dark. */
+:root {
+  --viz-text: #0b0b0b;
+  --viz-text-secondary: #52514e;
+  --viz-muted: #898781;
+  --viz-grid: #e1e0d9;
+  --viz-axis: #c3c2b7;
+  --viz-series-1: #2a78d6;
+  --viz-series-2: #eb6834;
+  --viz-series-3: #1baf7a;
+  --viz-surface: #fcfcfb;
+  --viz-ring: rgba(11, 11, 11, 0.1);
+  --viz-shadow: 0 8px 24px rgba(20, 20, 18, 0.12);
+  --table-head: #f4f3ee;
+  --table-stripe: rgba(11, 11, 11, 0.018);
+  --table-hover: #eef4fc;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --viz-text: #ffffff;
+    --viz-text-secondary: #c3c2b7;
+    --viz-muted: #898781;
+    --viz-grid: #2c2c2a;
+    --viz-axis: #383835;
+    --viz-series-1: #3987e5;
+    --viz-series-2: #d95926;
+    --viz-series-3: #199e70;
+    --viz-surface: #1a1a19;
+    --viz-ring: rgba(255, 255, 255, 0.1);
+    --viz-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    --table-head: #20201e;
+    --table-stripe: rgba(255, 255, 255, 0.02);
+    --table-hover: #1d2733;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Tables. Unlayered on purpose: these rules win over the per-cell utility classes (padding,
+   borders, header opacity), so every table in the app looks the same. Alignment stays with
+   each table (number columns keep text-right). */
+.kw-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--viz-grid);
+  border-radius: 12px;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+  background: var(--viz-surface);
+}
+.kw-table thead {
+  opacity: 1;
+}
+.kw-table th {
+  background: var(--table-head);
+  color: var(--viz-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--viz-grid);
+  white-space: nowrap;
+}
+.kw-table tr {
+  border: 0;
+}
+.kw-table td {
+  padding: 8px 10px;
+  border-top: 1px solid var(--viz-grid);
+}
+.kw-table th:first-child,
+.kw-table td:first-child {
+  padding-left: 14px;
+  white-space: nowrap;
+}
+.kw-table th:last-child,
+.kw-table td:last-child {
+  padding-right: 14px;
+}
+.kw-table tbody tr:first-child td {
+  border-top: 0;
+}
+.kw-table tbody tr:nth-child(even) td {
+  background: var(--table-stripe);
+}
+.kw-table tbody tr:hover td {
+  background: var(--table-hover);
+}
+.kw-table tbody td:first-child {
+  font-weight: 500;
+}
+/* Total rows (marked bold): a stronger rule above and the header's tint. */
+.kw-table tbody tr.font-semibold td {
+  border-top: 2px solid var(--viz-axis);
+  background: var(--table-head);
+  font-weight: 600;
+}
+/* Numbers never break across lines. */
+.kw-table td.text-right,
+.kw-table th.text-right {
+  white-space: nowrap;
+}
