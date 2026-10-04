@@ -1,0 +1,10 @@
+# Never put local data or keys into the image: they go on the volume.
+data
+.env*
+!.env.example
+node_modules
+.next
+.git
+programs/roof-split/target
+commit-files.sh
+*.tsbuildinfo
