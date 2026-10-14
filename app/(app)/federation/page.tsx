@@ -16,7 +16,7 @@ import { Kpi, TxLink } from "@/components/ui/kit";
 
 export const dynamic = "force-dynamic";
 
-const card = "rounded-lg border border-black/10 p-5 dark:border-white/15";
+const card = "v-card p-6";
 const DOT: Record<Relation, string> = { same_substation: "#2f9e44", same_area: "#1c7ed6", adjacent_area: "#e8590c", remote: "#c92a2a" };
 const CHIP: Record<string, string> = {
   trade: "bg-amber-500/15 text-amber-900 dark:text-amber-200",
@@ -65,8 +65,8 @@ export default async function FederationPage() {
   );
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8">
-      <h1 className="text-2xl font-semibold">{t.title}</h1>
+    <main className="mx-auto w-full max-w-6xl px-6 py-8 md:px-8">
+      <h1 className="v-h1">{t.title}</h1>
       <p className="mt-1 max-w-3xl text-sm opacity-70">{t.intro}</p>
 
       <section className={`mt-6 ${card}`}>
@@ -81,7 +81,7 @@ export default async function FederationPage() {
                 <input type="checkbox" name="enabled" defaultChecked={enabled} />
                 {t.enable}
               </label>
-              <button type="submit" className="rounded-md bg-blue-600 px-3 py-1 font-medium text-white hover:bg-blue-700">
+              <button type="submit" className="v-btn">
                 {m.common.save}
               </button>
             </form>
@@ -178,7 +178,7 @@ export default async function FederationPage() {
               <div className={`mt-3 rounded-xl border-2 p-3 ${LEVEL_STYLE.same_substation}`}>
                 <p className="text-xs font-medium">{t.level.same_substation}</p>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-medium text-white">{community?.name ?? "Volty"} ({t.you})</span>
+                  <span className="v-btn">{community?.name ?? "Volty"} ({t.you})</span>
                   {ring("same_substation")}
                 </div>
               </div>
