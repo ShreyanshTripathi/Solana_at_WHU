@@ -248,7 +248,7 @@ export default function RegionMap({ data, dayStart, lastHour, startHour }: { dat
             aria-label={m.map3d.hour}
           />
           <div className="mt-1 flex flex-wrap gap-1.5">
-            <button type="button" onClick={() => setPlaying((p) => !p)} className="rounded bg-blue-600 px-2 py-1 font-medium text-white">
+            <button type="button" onClick={() => setPlaying((p) => !p)} className="v-btn">
               {playing ? m.map3d.pause : m.map3d.play}
             </button>
             <button type="button" aria-pressed={hour === "day"} onClick={() => (setPlaying(false), setHour("day"))} className="rounded border border-black/15 px-2 py-1 aria-pressed:bg-blue-600/10 dark:border-white/20">
