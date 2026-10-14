@@ -1,6 +1,7 @@
 import { Volty } from "@/components/brand/Volty";
 import { DemoProgress } from "@/components/demo/DemoProgress";
 import { authConfig } from "@/lib/auth/config";
+import { isDemoMode } from "@/lib/mode";
 import { isAdmin } from "@/lib/auth/policy";
 import { getCurrentMember } from "@/lib/auth/session";
 import { DemoLength } from "@/components/demo/DemoLength";
@@ -26,18 +27,18 @@ const TOUR = [
   { accountId: "acc-lena", who: "Lena", next: "/projects" },
   { accountId: "acc-anna", who: "Anna Schmitt", next: "/map" },
 ];
-const card = "rounded-lg border border-black/10 p-5 dark:border-white/15";
+const card = "v-card p-6";
 
 export default async function DemoPage() {
   const { m } = await getI18n();
   const t = m.demo;
   const me = await getCurrentMember();
-  const allowed = authConfig().demoLogin || (me !== null && isAdmin(me));
+  const allowed = isDemoMode() && (authConfig().demoLogin || (me !== null && isAdmin(me)));
   const state = demoState();
 
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-8">
-      <h1 className="flex items-center gap-3 text-2xl font-semibold">
+      <h1 className="v-h1 flex items-center gap-3">
         <Volty size={52} mood="wink" />
         {t.title}
       </h1>
@@ -59,7 +60,7 @@ export default async function DemoPage() {
               />
               <button
                 type="submit"
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                className="v-btn"
               >
                 {state.startedAt ? t.again : t.start}
               </button>
@@ -85,7 +86,7 @@ export default async function DemoPage() {
                       <input type="hidden" name="next" value={TOUR[i].next} />
                       <button
                         type="submit"
-                        className="rounded-md border border-blue-600 px-3 py-1 text-sm font-medium text-blue-700 hover:bg-blue-600/10 dark:text-blue-300"
+                        className="v-btn-secondary"
                       >
                         {t.open(TOUR[i].who)} →
                       </button>
