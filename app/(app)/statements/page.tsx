@@ -8,7 +8,7 @@ import { loadStatement, monthBounds, statementMonths } from "@/lib/statements/lo
 
 export const dynamic = "force-dynamic";
 
-const card = "rounded-lg border border-black/10 p-5 dark:border-white/15";
+const card = "v-card p-6";
 const th = "py-1 font-normal";
 
 export default async function StatementsPage({ searchParams }: PageProps<"/statements">) {
@@ -25,8 +25,8 @@ export default async function StatementsPage({ searchParams }: PageProps<"/state
   const vat = f.pct(VAT_RATE);
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8">
-      <h1 className="text-2xl font-semibold">{t.title}</h1>
+    <main className="mx-auto w-full max-w-4xl px-6 py-8 md:px-8">
+      <h1 className="v-h1">{t.title}</h1>
       <p className="mt-1 text-sm opacity-70">{t.intro}</p>
 
       {!s ? (
@@ -46,7 +46,7 @@ export default async function StatementsPage({ searchParams }: PageProps<"/state
             ))}
             <a
               href={`/statements/pdf?${new URLSearchParams({ ...asQuery, month: s.monthKey })}`}
-              className="ml-auto rounded-md bg-blue-600 px-4 py-1.5 font-medium text-white hover:bg-blue-700"
+              className="v-btn ml-auto"
             >
               {t.download}
             </a>
