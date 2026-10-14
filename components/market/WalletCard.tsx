@@ -1,4 +1,4 @@
-import { approveAgentLimit, approveWalletSpending, revokeWalletSpending, topUpWallet } from "@/app/buyer/actions";
+import { approveAgentLimit, approveWalletSpending, revokeWalletSpending, topUpWallet } from "@/app/(app)/buyer/actions";
 import type { LimitSuggestion } from "@/lib/agents/spending";
 import type { Format } from "@/lib/i18n/format";
 import type { Messages } from "@/lib/i18n/messages";
@@ -6,7 +6,7 @@ import type { WalletStatus } from "@/lib/solana/p2p";
 import { explorerAddressUrl } from "@/lib/solana/wallets";
 import { OwnWalletActions } from "./OwnWalletActions";
 
-const input = "mt-1 block w-28 rounded border border-black/15 bg-transparent px-2 py-1 dark:border-white/20";
+const input = "v-input w-28";
 const button = "rounded border border-black/15 px-3 py-1 dark:border-white/20";
 
 // Peer-to-peer mode (1a): the buyer's wallet, the spending limit they approved for Volty's
@@ -60,7 +60,7 @@ export function WalletCard(props: {
           </p>
           {ownWallet && canAct && (
             <form action={approveAgentLimit} className="mt-2">
-              <button type="submit" className="rounded bg-blue-600 px-3 py-1 text-white">
+              <button type="submit" className="v-btn">
                 {t.agentApply(f.eur(suggestion.limitEur, 0))}
               </button>
             </form>
@@ -80,7 +80,7 @@ export function WalletCard(props: {
               <span className="text-xs opacity-70">{t.limit}</span>
               <input type="number" name="limitEur" min={1} max={500} step={1} defaultValue={30} className={input} />
             </label>
-            <button type="submit" className="rounded bg-blue-600 px-3 py-1 text-white">
+            <button type="submit" className="v-btn">
               {t.approve}
             </button>
           </form>
