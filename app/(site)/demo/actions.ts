@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { authConfig } from "@/lib/auth/config";
+import { isDemoMode } from "@/lib/mode";
 import { isAdmin } from "@/lib/auth/policy";
 import { getCurrentMember } from "@/lib/auth/session";
 import { startDemo, stopDemo } from "@/lib/demo/run";
@@ -34,6 +35,6 @@ export async function stopDemoHereAction(formData: FormData) {
 
 async function assertDemoAllowed() {
   const me = await getCurrentMember();
-  if (!authConfig().demoLogin && !(me && isAdmin(me)))
+  if (!isDemoMode() || (!authConfig().demoLogin && !(me && isAdmin(me))))
     throw new Error("The live demo is only available on demo setups.");
 }
