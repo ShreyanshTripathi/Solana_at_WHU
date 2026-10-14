@@ -1,7 +1,11 @@
 import { and, eq, gte, lt } from "drizzle-orm";
 import { db, schema } from "@/db/client";
 import { localMidnight, localTime } from "@/lib/sim/clock";
-import { clearSkyKwhPerKwp, expectedSiteLoadKwh, type LoadSite } from "@/lib/sim/profiles";
+import {
+  clearSkyKwhPerKwp,
+  expectedSiteLoadKwh,
+  type LoadSite,
+} from "@/lib/sim/profiles";
 import { SCENARIOS } from "./battery";
 
 // A forecast that learns from each home's own meter data (the last 14 days), instead of the fixed
@@ -42,16 +46,26 @@ interface Reading {
 
 const slotOf = (ts: number) => {
   const { minuteOfDay, weekday } = localTime(ts);
-  return { hour: Math.floor(minuteOfDay / 60), quarter: Math.floor(minuteOfDay / 15), weekend: weekday === 0 || weekday === 6 };
+  return {
+    hour: Math.floor(minuteOfDay / 60),
+    quarter: Math.floor(minuteOfDay / 15),
+    weekend: weekday === 0 || weekday === 6,
+  };
 };
 const quantile = (xs: number[], q: number) => {
   const s = [...xs].sort((a, b) => a - b);
   return s[Math.min(s.length - 1, Math.max(0, Math.round(q * (s.length - 1))))];
 };
 
-const baselineGeneration = (site: ForecastSite, ts: number, scenario: Scenario) => site.pvKwp * clearSkyKwhPerKwp(ts, site.lat, site.lon) * SCENARIOS[scenario];
+const baselineGeneration = (
+  site: ForecastSite,
+  ts: number,
+  scenario: Scenario,
+) =>
+  site.pvKwp * clearSkyKwhPerKwp(ts, site.lat, site.lon) * SCENARIOS[scenario];
 
-const dayCount = (rs: Reading[]) => new Set(rs.map((r) => localTime(r.ts).dateKey)).size;
+const dayCount = (rs: Reading[]) =>
+  new Set(rs.map((r) => localTime(r.ts).dateKey)).size;
 const PRIOR_DAYS = 7; // how many days of history count as much as the standard load profile
 
 function fit(site: ForecastSite, readings: Reading[]) {
@@ -72,14 +86,30 @@ function fit(site: ForecastSite, readings: Reading[]) {
     d.sky += sky;
     dayRatio.set(day, d);
   }
-  const overall = den.reduce((a, b) => a + b, 0) > 0 ? num.reduce((a, b) => a + b, 0) / den.reduce((a, b) => a + b, 0) : SCENARIOS.p50;
-  const shareByHour = num.map((n, h) => (den[h] > site.pvKwp * 0.05 ? n / den[h] : overall));
-  const ratios = [...dayRatio.values()].filter((d) => d.sky > 0.5).map((d) => d.gen / d.sky);
-  const mean = ratios.length > 0 ? ratios.reduce((a, b) => a + b, 0) / ratios.length : 1;
+  const overall =
+    den.reduce((a, b) => a + b, 0) > 0
+      ? num.reduce((a, b) => a + b, 0) / den.reduce((a, b) => a + b, 0)
+      : SCENARIOS.p50;
+  const shareByHour = num.map((n, h) =>
+    den[h] > site.pvKwp * 0.05 ? n / den[h] : overall,
+  );
+  const ratios = [...dayRatio.values()]
+    .filter((d) => d.sky > 0.5)
+    .map((d) => d.gen / d.sky);
+  const mean =
+    ratios.length > 0 ? ratios.reduce((a, b) => a + b, 0) / ratios.length : 1;
   const spread =
     ratios.length >= MIN_DAYS && mean > 0
-      ? { p10: Math.max(0.2, quantile(ratios, 0.1) / mean), p50: 1, p90: Math.min(1.6, quantile(ratios, 0.9) / mean) }
-      : { p10: SCENARIOS.p10 / SCENARIOS.p50, p50: 1, p90: SCENARIOS.p90 / SCENARIOS.p50 };
+      ? {
+          p10: Math.max(0.2, quantile(ratios, 0.1) / mean),
+          p50: 1,
+          p90: Math.min(1.6, quantile(ratios, 0.9) / mean),
+        }
+      : {
+          p10: SCENARIOS.p10 / SCENARIOS.p50,
+          p50: 1,
+          p90: SCENARIOS.p90 / SCENARIOS.p50,
+        };
 
   // Use: mean per quarter-hour, weekdays and weekends apart; the quarter-hour across all days as a fallback.
   const sums = new Map<string, { total: number; n: number }>();
@@ -101,25 +131,42 @@ function fit(site: ForecastSite, readings: Reading[]) {
 
   return {
     generation: (ts: number, scenario: Scenario) =>
-      site.pvKwp * clearSkyKwhPerKwp(ts, site.lat, site.lon) * shareByHour[slotOf(ts).hour] * spread[scenario],
+      site.pvKwp *
+      clearSkyKwhPerKwp(ts, site.lat, site.lon) *
+      shareByHour[slotOf(ts).hour] *
+      spread[scenario],
     load: (ts: number) => {
       const { quarter, weekend } = slotOf(ts);
       const prior = expectedSiteLoadKwh(site, ts);
       const learned = mean2(`${weekend}:${quarter}`) ?? mean2(`all:${quarter}`);
-      return learned === undefined ? prior : weight * learned + (1 - weight) * prior;
+      return learned === undefined
+        ? prior
+        : weight * learned + (1 - weight) * prior;
     },
   };
 }
 
 const readingsFor = (siteId: string, from: number, to: number): Reading[] =>
   db
-    .select({ ts: schema.intervalReadings.ts, generationKwh: schema.intervalReadings.generationKwh, loadKwh: schema.intervalReadings.loadKwh })
+    .select({
+      ts: schema.intervalReadings.ts,
+      generationKwh: schema.intervalReadings.generationKwh,
+      loadKwh: schema.intervalReadings.loadKwh,
+    })
     .from(schema.intervalReadings)
-    .where(and(eq(schema.intervalReadings.siteId, siteId), gte(schema.intervalReadings.ts, from), lt(schema.intervalReadings.ts, to)))
+    .where(
+      and(
+        eq(schema.intervalReadings.siteId, siteId),
+        gte(schema.intervalReadings.ts, from),
+        lt(schema.intervalReadings.ts, to),
+      ),
+    )
     .all();
 
-
-export function learnSiteModel(site: ForecastSite & { id: string }, asOf: number): SiteModel {
+export function learnSiteModel(
+  site: ForecastSite & { id: string },
+  asOf: number,
+): SiteModel {
   const today = localMidnight(asOf);
   const history = readingsFor(site.id, today - HISTORY_DAYS * DAY_MS, asOf);
   const days = dayCount(history);
@@ -144,13 +191,75 @@ export function learnSiteModel(site: ForecastSite & { id: string }, asOf: number
     let baseErr = 0;
     let actual = 0;
     for (const r of test) {
-      learnedErr += Math.abs(past.generation(r.ts, "p50") - r.generationKwh) + Math.abs(past.load(r.ts) - r.loadKwh);
-      baseErr += Math.abs(baselineGeneration(site, r.ts, "p50") - r.generationKwh) + Math.abs(expectedSiteLoadKwh(site, r.ts) - r.loadKwh);
+      learnedErr +=
+        Math.abs(past.generation(r.ts, "p50") - r.generationKwh) +
+        Math.abs(past.load(r.ts) - r.loadKwh);
+      baseErr +=
+        Math.abs(baselineGeneration(site, r.ts, "p50") - r.generationKwh) +
+        Math.abs(expectedSiteLoadKwh(site, r.ts) - r.loadKwh);
       actual += r.generationKwh + r.loadKwh;
     }
-    if (actual > 0) accuracy = { learnedPct: learnedErr / actual, baselinePct: baseErr / actual };
+    if (actual > 0)
+      accuracy = {
+        learnedPct: learnedErr / actual,
+        baselinePct: baseErr / actual,
+      };
   }
 
   const model = fit(site, history);
   return { learned: true, daysUsed: days, ...model, accuracy };
+}
+
+// How the forecast did on each of the last `days` full days, the same check as `accuracy` but
+// repeated: for each day, train on the 14 days before it, then score that day against what the
+// meter measured (solar + use), next to the fixed model. Oldest first; days without enough history
+// before them, or without a full day of readings, are skipped.
+export interface DayAccuracy {
+  dayStart: number;
+  learnedPct: number;
+  baselinePct: number;
+}
+
+export function accuracyHistory(
+  site: ForecastSite & { id: string },
+  asOf: number,
+  days = 14,
+): DayAccuracy[] {
+  const today = localMidnight(asOf);
+  const all = readingsFor(
+    site.id,
+    today - (days + HISTORY_DAYS) * DAY_MS,
+    today,
+  );
+  const out: DayAccuracy[] = [];
+  for (let d = days; d >= 1; d--) {
+    const dayStart = today - d * DAY_MS;
+    const train = all.filter(
+      (r) => r.ts >= dayStart - HISTORY_DAYS * DAY_MS && r.ts < dayStart,
+    );
+    const test = all.filter(
+      (r) => r.ts >= dayStart && r.ts < dayStart + DAY_MS,
+    );
+    if (dayCount(train) < MIN_DAYS || test.length < 80) continue;
+    const model = fit(site, train);
+    let learnedErr = 0;
+    let baseErr = 0;
+    let actual = 0;
+    for (const r of test) {
+      learnedErr +=
+        Math.abs(model.generation(r.ts, "p50") - r.generationKwh) +
+        Math.abs(model.load(r.ts) - r.loadKwh);
+      baseErr +=
+        Math.abs(baselineGeneration(site, r.ts, "p50") - r.generationKwh) +
+        Math.abs(expectedSiteLoadKwh(site, r.ts) - r.loadKwh);
+      actual += r.generationKwh + r.loadKwh;
+    }
+    if (actual > 0)
+      out.push({
+        dayStart,
+        learnedPct: learnedErr / actual,
+        baselinePct: baseErr / actual,
+      });
+  }
+  return out;
 }
