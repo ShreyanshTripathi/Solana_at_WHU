@@ -126,10 +126,11 @@ describe("who may see and change what", () => {
 
   it("only redirects within the site after login", () => {
     expect(safeNext("/seller?at=16:00")).toBe("/seller?at=16:00");
-    expect(safeNext("//evil.example")).toBe("/");
-    expect(safeNext("https://evil.example")).toBe("/");
-    expect(safeNext("/\\evil.example")).toBe("/");
-    expect(safeNext(undefined)).toBe("/");
+    expect(safeNext("//evil.example")).toBe("/start");
+    expect(safeNext("https://evil.example")).toBe("/start");
+    expect(safeNext("/\\evil.example")).toBe("/start");
+    expect(safeNext(undefined)).toBe("/start");
+    expect(safeNext("/")).toBe("/start");
   });
 });
 

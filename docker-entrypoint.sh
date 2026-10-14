@@ -5,7 +5,7 @@ set -e
 mkdir -p /data
 if [ -f /data/restore.tgz ]; then
   echo "Restoring /data from restore.tgz"
-  rm -f /data/kiezwatt.db /data/kiezwatt.db-wal /data/kiezwatt.db-shm
+  rm -f /data/kiezwatt.db /data/kiezwatt.db-wal /data/kiezwatt.db-shm /data/prod.db /data/prod.db-wal /data/prod.db-shm
   tar xzf /data/restore.tgz -C /data
   rm /data/restore.tgz
 fi

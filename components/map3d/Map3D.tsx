@@ -2,21 +2,21 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MapboxOverlay } from "@deck.gl/mapbox";
-import { ArcLayer, ColumnLayer, ScatterplotLayer } from "@deck.gl/layers";
+import { IconLayer, PathLayer, ScatterplotLayer, TextLayer } from "@deck.gl/layers";
 import type { PickingInfo } from "@deck.gl/core";
 import * as maplibregl from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Map3dData, Map3dHour, Map3dSite } from "@/lib/dashboard/map3d";
 import { useI18n } from "@/lib/i18n/client";
+import { along, arcColor, arcPoints, houseIcon, type LngLatZ } from "./graphics";
 
 // MapLibre 5, not 6: deck.gl 9.4 draws inside the map through MapLibre 5's renderer internals.
 // The neighbourhood in 3D: MapLibre draws the base map (free OpenFreeMap tiles with 3D buildings) and
-// the real power grid from OpenStreetMap; deck.gl draws each home's solar and use as columns and the
-// energy shared between neighbours as arcs, for one hour of the simulated day at a time.
+// the real power grid from OpenStreetMap; deck.gl draws each home as a little house (with its solar
+// panels) and the energy shared between neighbours as glowing arcs that Volty rides along, for one
+// hour of the simulated day at a time or the whole day.
 
 const STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
-const METRES_PER_KWH = 5; // column height: 5 m per kWh in the hour
-const USE_OFFSET_DEG = 0.00026; // the use column stands ~18 m east of the solar column
 const COLORS = {
   solar: [245, 159, 0] as [number, number, number],
   use: [42, 120, 214] as [number, number, number],
@@ -28,6 +28,8 @@ const COLORS = {
   area: "#2a78d6",
 };
 const VIEW = { zoom: 15.3, pitch: 58, bearing: -28 };
+// Graphics are drawn over the map's 3D buildings, so a tall block never hides a house or an arc.
+const ON_TOP = { depthCompare: "always", depthWriteEnabled: false } as const;
 type Toggle = "buildings" | "grid" | "flows" | "columns" | "area";
 
 const escapeHtml = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
@@ -84,8 +86,6 @@ export default function Map3D({ data, focusSiteId, compact = false }: { data: Ma
   }, [focus, data.hours, siteById]);
   const fitOptions = { padding: { top: 30, bottom: 20, left: compact ? 290 : 40, right: 50 }, maxZoom: 16.2, pitch: VIEW.pitch, bearing: VIEW.bearing };
 
-  // Whole-day columns are about 10x taller than one hour's, so scale them down to stay readable.
-  const metresPerKwh = hour === "day" ? METRES_PER_KWH / 6 : METRES_PER_KWH;
 
   // Create the map once.
   useEffect(() => {
@@ -172,81 +172,161 @@ export default function Map3D({ data, focusSiteId, compact = false }: { data: Ma
     for (const id of ["kw-area-fill", "kw-area-line"]) map.setLayoutProperty(id, "visibility", vis(show.area));
   }, [ready, show.buildings, show.grid, show.area]);
 
-  // deck.gl layers for the chosen hour.
+  // The arcs for the chosen hour: 3D curves, so the mascots can ride exactly along them.
+  const arcs = useMemo(
+    () =>
+      current.flows
+        .filter((x) => siteById.has(x.from) && siteById.has(x.to) && x.kwh > 0.0005)
+        .map((x, i) => ({ flow: x, points: arcPoints(pos(siteById.get(x.from)!), pos(siteById.get(x.to)!)), offset: (i * 0.37) % 1 })),
+    [current.flows, siteById],
+  );
+
+  // deck.gl layers for the chosen hour: arcs, houses and the "You" label. The mascots are added by
+  // the animation loop below, which redraws them along the arcs every frame.
+  const baseRef = useRef<{ layers: unknown[]; tooltip: (info: PickingInfo) => ReturnType<typeof tip> | null }>({ layers: [], tooltip: () => null });
   useEffect(() => {
-    const overlay = overlayRef.current;
-    if (!overlay) return;
     const h = current;
     const kwh = (x: number | undefined) => f.kwh(x ?? 0, 2);
-    overlay.setProps({
+    const maxKwh = Math.max(...arcs.map((a) => a.flow.kwh), 0.001);
+    // Each arc as a few overlapping smooth pieces, so the colour can fade from yellow to orange.
+    type Segment = { path: LngLatZ[]; t: number; flow: (typeof h.flows)[number]; width: number };
+    const PIECES = 6;
+    const segments: Segment[] = arcs.flatMap((a) => {
+      const width = 2.5 + (a.flow.kwh / maxKwh) * 6;
+      const per = (a.points.length - 1) / PIECES;
+      return Array.from({ length: PIECES }, (_, k) => ({
+        path: a.points.slice(Math.floor(k * per), Math.min(a.points.length, Math.ceil((k + 1) * per) + 1)),
+        t: (k + 0.5) / PIECES,
+        flow: a.flow,
+        width,
+      }));
+    });
+    const kindOf = (s: Map3dSite) => (s.kind === "sme" ? (s.pvKwp > 0 ? "businessSolar" : "business") : s.pvKwp > 0 ? "solar" : "plain");
+    // Only homes that traded today: on a dashboard this home and its trading partners, otherwise
+    // everyone who bought or sold. The furthest are drawn first, so nearer ones overlap them.
+    const traded = new Set<string>(focus ? [focus.id] : []);
+    for (const hr of data.hours)
+      for (const x of hr.flows)
+        if (!focus || x.from === focus.id || x.to === focus.id) traded.add(x.from).add(x.to);
+    const homes = data.sites.filter((s) => traded.has(s.id)).sort((a, b) => b.lat - a.lat);
+    baseRef.current = {
       layers: [
-        new ScatterplotLayer<Map3dSite>({
-          id: "homes",
-          data: data.sites,
-          getPosition: pos,
-          getRadius: (s) => (s.self ? 16 : 11),
-          radiusUnits: "meters",
-          getFillColor: (s) => (s.self ? [42, 120, 214, 255] : [73, 80, 87, s.exact ? 230 : 120]),
-          stroked: true,
-          getLineColor: [255, 255, 255],
-          lineWidthMinPixels: 2,
-          pickable: true,
-        }),
-        new ColumnLayer<Map3dSite>({
-          id: "solar",
-          data: data.sites.filter((s) => (h.generation[s.id] ?? 0) > 0),
-          visible: show.columns,
-          getPosition: pos,
-          getElevation: (s) => (h.generation[s.id] ?? 0) * metresPerKwh,
-          radius: 9,
-          diskResolution: 12,
-          extruded: true,
-          getFillColor: COLORS.solar,
-          pickable: true,
-          updateTriggers: { getElevation: [hour, focusSiteId] },
-        }),
-        new ColumnLayer<Map3dSite>({
-          id: "use",
-          data: data.sites.filter((s) => (h.use[s.id] ?? 0) > 0),
-          visible: show.columns,
-          getPosition: (s) => [s.lon + USE_OFFSET_DEG, s.lat],
-          getElevation: (s) => (h.use[s.id] ?? 0) * metresPerKwh,
-          radius: 7,
-          diskResolution: 12,
-          extruded: true,
-          getFillColor: COLORS.use,
-          pickable: true,
-          updateTriggers: { getElevation: [hour, focusSiteId] },
-        }),
-        new ArcLayer<(typeof h.flows)[number]>({
-          id: "flows",
-          data: h.flows.filter((x) => siteById.has(x.from) && siteById.has(x.to)),
+        new PathLayer<Segment>({
+          id: "flows-glow",
+          parameters: ON_TOP,
+          data: segments,
           visible: show.flows,
-          getSourcePosition: (x) => pos(siteById.get(x.from)!),
-          getTargetPosition: (x) => pos(siteById.get(x.to)!),
-          getSourceColor: [...COLORS.solar, 230],
-          getTargetColor: [...COLORS.use, 230],
-          getWidth: (x) => Math.min(14, 2 + x.kwh * (hour === "day" ? 1 : 4)),
-          getHeight: 0.35,
+          getPath: (x) => x.path,
+          getColor: (x) => arcColor(x.t, 55),
+          getWidth: (x) => x.width + 10,
           widthUnits: "pixels",
+          capRounded: true,
+          jointRounded: true,
+        }),
+        new PathLayer<Segment>({
+          id: "flows",
+          parameters: ON_TOP,
+          data: segments,
+          visible: show.flows,
+          getPath: (x) => x.path,
+          getColor: (x) => arcColor(x.t),
+          getWidth: (x) => x.width,
+          widthUnits: "pixels",
+          capRounded: true,
+          jointRounded: true,
           pickable: true,
-          updateTriggers: { getWidth: [hour, focusSiteId] },
+        }),
+        new IconLayer<Map3dSite>({
+          id: "homes",
+          parameters: ON_TOP,
+          data: homes,
+          visible: show.columns,
+          getPosition: pos,
+          getIcon: (s) => houseIcon(kindOf(s), s.self),
+          getSize: (s) => (s.self ? 44 : s.kind === "sme" ? 38 : 32),
+          sizeUnits: "pixels",
+          getColor: (s) => [255, 255, 255, s.exact || s.self ? 255 : 200],
+          pickable: true,
+        }),
+        new TextLayer<Map3dSite>({
+          id: "you",
+          parameters: ON_TOP,
+          data: data.sites.filter((s) => s.self),
+          visible: show.columns,
+          getPosition: pos,
+          getText: () => t.youShort,
+          getSize: 12,
+          getColor: [255, 255, 255],
+          getPixelOffset: [0, -66],
+          fontWeight: 600,
+          background: true,
+          getBackgroundColor: [17, 17, 17, 255],
+          backgroundPadding: [8, 3],
         }),
       ],
-      getTooltip: ({ object, layer }: PickingInfo) => {
+      tooltip: ({ object, layer }: PickingInfo) => {
         if (!object || !layer) return null;
         if (layer.id === "flows") {
-          const x = object as (typeof h.flows)[number];
+          const x = (object as Segment).flow;
           return tip(t.tipFlow(siteById.get(x.from)!.name, siteById.get(x.to)!.name, f.kwh(x.kwh, 2)));
         }
         const s = object as Map3dSite;
         const where = s.self ? ` (${t.you})` : s.exact ? "" : ` (${t.streetLevel})`;
         return tip(t.tipSite(s.name + where, kwh(h.generation[s.id]), kwh(h.use[s.id])));
       },
-    });
+    };
     // pos and siteById only change with data; hour and toggles drive the redraw.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, current, metresPerKwh, show.columns, show.flows, data, f, t]);
+  }, [ready, current, arcs, show.columns, show.flows, data, f, t]);
+
+  // A small dot rides each arc from the supplier to the receiver. ~30 frames a second while the map
+  // is open; for visitors who prefer reduced motion, the dots wait halfway along instead.
+  useEffect(() => {
+    const overlay = overlayRef.current;
+    if (!overlay || !ready) return;
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let frame = 0;
+    let last = 0;
+    const draw = (now: number) => {
+      const at = (x: (typeof arcs)[number]) => along(x.points, still ? 0.5 : (now / 2600 + x.offset) % 1);
+      const glow = new ScatterplotLayer<(typeof arcs)[number]>({
+        id: "pulse-glow",
+        data: arcs,
+        visible: show.flows,
+        parameters: ON_TOP,
+        getPosition: at,
+        getRadius: 9,
+        radiusUnits: "pixels",
+        getFillColor: [255, 176, 32, 70],
+        updateTriggers: { getPosition: now },
+      });
+      const dots = new ScatterplotLayer<(typeof arcs)[number]>({
+        id: "pulse",
+        data: arcs,
+        visible: show.flows,
+        parameters: ON_TOP,
+        getPosition: at,
+        getRadius: 4.5,
+        radiusUnits: "pixels",
+        getFillColor: [255, 122, 26, 255],
+        stroked: true,
+        getLineColor: [255, 255, 255, 255],
+        lineWidthMinPixels: 1.5,
+        updateTriggers: { getPosition: now },
+      });
+      overlay.setProps({ layers: [...(baseRef.current.layers as never[]), glow, dots], getTooltip: baseRef.current.tooltip as never });
+    };
+    const tick = (now: number) => {
+      if (now - last > 33) {
+        last = now;
+        draw(now);
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    if (still) draw(0);
+    else frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [ready, arcs, show.flows, current, show.columns]);
 
   // Play through the day, one hour per second.
   useEffect(() => {
@@ -257,11 +337,11 @@ export default function Map3D({ data, focusSiteId, compact = false }: { data: Ma
 
   const hourStart = data.dayStart + (hour === "day" ? 0 : hour) * 3_600_000;
   const shared = current.flows.reduce((s, x) => s + x.kwh, 0);
-  const box = "rounded-lg border border-black/10 bg-white/90 p-3 text-xs shadow-sm backdrop-blur dark:border-white/15 dark:bg-neutral-900/90";
+  const box = "rounded-2xl border border-[#ecece8] bg-white/90 p-3.5 text-xs shadow-[0_20px_50px_-24px_rgba(17,17,17,0.35)] backdrop-blur";
 
   return (
     <div className="relative">
-      <div ref={container} className={`${compact ? "h-[28rem]" : "h-[72vh] min-h-[480px]"} w-full overflow-hidden rounded-lg`} />
+      <div ref={container} className={`${compact ? "h-[28rem]" : "h-[72vh] min-h-[480px]"} w-full overflow-hidden rounded-[18px]`} />
 
       <div className={`absolute left-3 top-3 w-72 space-y-3 ${box}`}>
         <div>
@@ -278,10 +358,10 @@ export default function Map3D({ data, focusSiteId, compact = false }: { data: Ma
             max={data.lastHour}
             value={hour === "day" ? data.lastHour : hour}
             onChange={(e) => setHour(Number(e.target.value))}
-            className="mt-1 w-full accent-blue-600"
+            className="mt-1 w-full accent-[#111111]"
           />
           <div className="mt-1 flex flex-wrap gap-1.5">
-            <button type="button" onClick={() => setPlaying((p) => !p)} className="whitespace-nowrap rounded bg-blue-600 px-2 py-1 font-medium text-white">
+            <button type="button" onClick={() => setPlaying((p) => !p)} className="v-btn min-h-9 whitespace-nowrap px-3.5 py-1.5 text-xs">
               {playing ? t.pause : t.play}
             </button>
             <button
@@ -291,14 +371,14 @@ export default function Map3D({ data, focusSiteId, compact = false }: { data: Ma
                 setPlaying(false);
                 setHour("day");
               }}
-              className="whitespace-nowrap rounded border border-black/15 px-2 py-1 aria-pressed:bg-blue-600/10 aria-pressed:font-medium dark:border-white/20"
+              className="v-btn-secondary min-h-9 px-3 py-1.5 text-xs aria-pressed:border-[#111111] aria-pressed:font-semibold"
             >
               {t.wholeDay}
             </button>
             <button
               type="button"
               onClick={() => (frame ? mapRef.current?.fitBounds(frame, { ...fitOptions, duration: 800 }) : mapRef.current?.easeTo({ center, ...VIEW, duration: 800 }))}
-              className="whitespace-nowrap rounded border border-black/15 px-2 py-1 dark:border-white/20"
+              className="v-btn-secondary min-h-9 px-3 py-1.5 text-xs"
             >
               {t.resetView}
             </button>
@@ -321,15 +401,17 @@ export default function Map3D({ data, focusSiteId, compact = false }: { data: Ma
   
           <ul className="space-y-1">
             <li className="flex items-center gap-2">
-              <span className="inline-block h-3 w-2 rounded-sm" style={{ background: `rgb(${COLORS.solar})` }} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={houseIcon("solar", false).url} alt="" className="h-4 w-auto" />
               {t.legend.solar}
             </li>
             <li className="flex items-center gap-2">
-              <span className="inline-block h-3 w-2 rounded-sm" style={{ background: `rgb(${COLORS.use})` }} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={houseIcon("plain", false).url} alt="" className="h-4 w-auto" />
               {t.legend.use}
             </li>
             <li className="flex items-center gap-2">
-              <span className="inline-block h-1 w-4 rounded" style={{ background: `linear-gradient(90deg, rgb(${COLORS.solar}), rgb(${COLORS.use}))` }} />
+              <span className="inline-block h-1 w-4 rounded" style={{ background: "linear-gradient(90deg, #FFD23F, #FF7A1A)" }} />
               {t.legend.flow}
             </li>
             <li className="flex items-center gap-2">

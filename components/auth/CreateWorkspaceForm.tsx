@@ -4,7 +4,7 @@ import { getIdentityToken, usePrivy } from "@privy-io/react-auth";
 import { useCreateWallet } from "@privy-io/react-auth/solana";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { createWorkspaceAction, type CreateWorkspaceResult } from "@/app/workspaces/actions";
+import { createWorkspaceAction, type CreateWorkspaceResult } from "@/app/(app)/workspaces/actions";
 import { useI18n } from "@/lib/i18n/client";
 
 const RETRIES = 6;
@@ -23,29 +23,29 @@ function Fields({ busy, error, onSubmit }: { busy: boolean; error: string | null
       }}
     >
       <fieldset className="grid gap-3 sm:grid-cols-2">
-        <legend className="mb-2 text-xs opacity-70">{t.type}</legend>
+        <legend className="mb-2 text-[13px] text-[#5c5c57]">{t.type}</legend>
         {t.kinds.map((k, i) => (
-          <label key={k.id} className="flex cursor-pointer gap-2 rounded-md border border-black/15 p-3 has-[:checked]:border-blue-600 dark:border-white/20">
-            <input type="radio" name="kind" value={k.id} defaultChecked={i === 0} className="mt-1" />
+          <label key={k.id} className="flex cursor-pointer gap-3 rounded-[18px] border border-[#ecece8] bg-[#fbfbf9] p-4 has-[:checked]:border-[#111111] has-[:checked]:bg-white has-[:checked]:shadow-[0_12px_30px_-18px_rgba(17,17,17,0.35)]">
+            <input type="radio" name="kind" value={k.id} defaultChecked={i === 0} className="mt-1 accent-[#111111]" />
             <span>
-              <span className="font-medium">{k.title}</span>
-              <span className="block text-xs opacity-70">{k.text}</span>
+              <span className="text-base font-semibold">{k.title}</span>
+              <span className="mt-1 block text-[13px] leading-relaxed text-[#5c5c57]">{k.text}</span>
             </span>
           </label>
         ))}
       </fieldset>
       <label className="block">
-        <span className="text-xs opacity-70">{t.name}</span>
+        <span className="text-[13px] text-[#5c5c57]">{t.name}</span>
         <input
           name="name"
           required
           minLength={2}
           maxLength={60}
           placeholder={t.namePlaceholder}
-          className="mt-1 block w-full rounded border border-black/15 bg-transparent px-2 py-1 dark:border-white/20"
+          className="v-input w-full"
         />
       </label>
-      <button type="submit" disabled={busy} className="rounded bg-blue-600 px-4 py-2 font-medium text-white disabled:opacity-60">
+      <button type="submit" disabled={busy} className="v-btn">
         {busy ? t.creating : t.create}
       </button>
       {error && (
@@ -103,7 +103,7 @@ function PrivyForm({ walletsInUse }: { walletsInUse: string[] }) {
     return (
       <div className="text-sm">
         <p>{m.workspaces.confirm}</p>
-        <button type="button" onClick={() => login()} className="mt-2 rounded bg-blue-600 px-4 py-2 font-medium text-white">
+        <button type="button" onClick={() => login()} className="v-btn mt-2">
           {m.workspaces.confirmButton}
         </button>
       </div>

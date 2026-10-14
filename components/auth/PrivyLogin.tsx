@@ -54,7 +54,7 @@ export function PrivyLogin({ next, label }: { next: string; label: string }) {
         type="button"
         onClick={() => login()}
         disabled={busy}
-        className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+        className="v-btn"
       >
         {!ready ? m.common.loading : authenticated && !error ? m.auth.settingUp : label}
       </button>

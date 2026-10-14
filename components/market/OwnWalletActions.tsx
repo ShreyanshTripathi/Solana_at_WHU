@@ -3,7 +3,7 @@
 import { useSignTransaction, useWallets } from "@privy-io/react-auth/solana";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { prepareWalletTx, submitWalletTxAction } from "@/app/buyer/actions";
+import { prepareWalletTx, submitWalletTxAction } from "@/app/(app)/buyer/actions";
 import { useI18n } from "@/lib/i18n/client";
 
 const toBytes = (b64: string) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
@@ -53,10 +53,10 @@ export function OwnWalletActions({ wallet, approved, suggestedEur }: { wallet: s
             step={1}
             value={limit}
             onChange={(e) => setLimit(Number(e.target.value))}
-            className="mt-1 block w-28 rounded border border-black/15 bg-transparent px-2 py-1 dark:border-white/20"
+            className="v-input w-28"
           />
         </label>
-        <button type="button" disabled={pending} onClick={() => run("approve")} className="rounded bg-blue-600 px-3 py-1 text-white disabled:opacity-50">
+        <button type="button" disabled={pending} onClick={() => run("approve")} className="v-btn">
           {pending ? t.ownWallet.signing : t.ownWallet.approve}
         </button>
         {approved && (

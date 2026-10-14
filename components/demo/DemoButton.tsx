@@ -1,5 +1,6 @@
-import { startDemoHereAction, stopDemoHereAction } from "@/app/demo/actions";
+import { startDemoHereAction, stopDemoHereAction } from "@/app/(site)/demo/actions";
 import { authConfig } from "@/lib/auth/config";
+import { isDemoMode } from "@/lib/mode";
 import { isAdmin } from "@/lib/auth/policy";
 import { getCurrentMember } from "@/lib/auth/session";
 import { DemoLength } from "@/components/demo/DemoLength";
@@ -14,7 +15,7 @@ const secondary =
 // the run. Only on demo setups or for Stadtwerk staff.
 export async function DemoButton({ next }: { next: string }) {
   const me = await getCurrentMember();
-  if (!authConfig().demoLogin && !(me && isAdmin(me))) return null;
+  if (!isDemoMode() || (!authConfig().demoLogin && !(me && isAdmin(me)))) return null;
   const { m } = await getI18n();
   const state = demoState();
   const { running, stopping } = state;
@@ -36,7 +37,7 @@ export async function DemoButton({ next }: { next: string }) {
         <button
           type="submit"
           disabled={running}
-          className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-default disabled:bg-blue-600/40"
+          className="v-btn"
         >
           <span aria-hidden>{running ? "◐" : "▶"}</span>
           {running && stopping

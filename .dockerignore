@@ -4,6 +4,8 @@ data
 !.env.example
 node_modules
 .next
+# The dev copies' build folders (npm run dev:demo / dev:prod / test runs).
+.next-*
 .git
 programs/roof-split/target
 commit-files.sh

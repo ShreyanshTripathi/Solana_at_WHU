@@ -36,8 +36,20 @@ export function assertAdmin(actor: Actor): void {
 }
 
 // Only follow redirects back into our own site ("/seller"), never to another origin ("//evil.com").
-export const safeNext = (next: unknown, fallback = "/") =>
-  typeof next === "string" && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : fallback;
+// Where to go after logging in: the page asked for, if it is on this site; otherwise the app (/start
+// opens the workspace's own home page). The landing page "/" counts as no page asked for.
+export const APP_START = "/start";
+export const safeNext = (next: unknown, fallback = APP_START) =>
+  typeof next === "string" && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") && next !== "/" ? next : fallback;
+
+// Each workspace's home page in the app.
+export function homePathFor(member: { kind: string; role?: string | null } | null, hasSolar = false): string {
+  if (!member) return "/workspaces/new";
+  if (member.role === "stadtwerk_admin" || member.kind === "supplier" || member.kind === "platform") return "/admin";
+  if (member.kind === "sme") return "/sme";
+  if (member.kind === "investor") return "/projects";
+  return hasSolar ? "/seller" : "/buyer";
+}
 
 // Link a newly created embedded wallet as the payout address only if the member has none yet,
 // or still has the server-held demo wallet. Changing an existing payout address needs support.

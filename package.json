@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:demo": "VOLTY_MODE=demo DEMO_LOGIN=true PROD_URL=http://localhost:3002 NEXT_DIST_DIR=.next-demo next dev -p 3001",
+    "dev:prod": "VOLTY_MODE=prod DEMO_LOGIN=false DATABASE_PATH=data/prod.db DEMO_URL=http://localhost:3001 NEXT_DIST_DIR=.next-prod next dev -p 3002",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -16,7 +18,8 @@
     "sim": "tsx scripts/run-sim.ts",
     "test": "vitest run",
     "typecheck": "next typegen && tsc --noEmit",
-    "neighbours:add": "tsx scripts/add-neighbours.ts"
+    "neighbours:add": "tsx scripts/add-neighbours.ts",
+    "prod:init": "tsx scripts/init-prod.ts"
   },
   "dependencies": {
     "@deck.gl/core": "^9.4.0",

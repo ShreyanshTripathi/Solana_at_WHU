@@ -6,7 +6,7 @@ import type { PricePoint } from "./PriceChart";
 
 // "Today's market price" card for the dashboards, shown when the community trades by auction.
 export function MarketSection({ m, f, points, averageCt }: { m: Messages; f: Format; points: PricePoint[]; averageCt: number | null }) {
-  const card = "rounded-lg border border-black/10 p-4 dark:border-white/15";
+  const card = "v-card p-5";
   return (
     <section className={`mt-4 ${card}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">

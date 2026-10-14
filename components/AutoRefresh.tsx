@@ -49,14 +49,14 @@ export function AutoRefresh({
     };
   }, [router, everyMs]);
   return live ? (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-red-600/10 px-2 py-0.5 text-xs font-semibold text-red-700 dark:text-red-400">
-      <span
-        className="h-2 w-2 animate-pulse rounded-full bg-red-600"
-        aria-hidden
-      />
+    <span className="inline-flex items-center gap-2 rounded-full border border-[#f6d9c2] bg-[#fff4ec] px-3 py-1 text-xs font-semibold text-[#c2410c]">
+      <span className="h-2 w-2 animate-pulse rounded-full bg-[#ff7a1a]" aria-hidden />
       {m.common.live}
     </span>
   ) : (
-    <span className="text-xs opacity-60">{m.common.autoRefresh}</span>
+    <span className="inline-flex items-center gap-2 rounded-full border border-[#ecece8] bg-white px-3 py-1 text-xs text-[#5c5c57]">
+      <span className="h-1.5 w-1.5 rounded-full bg-[#16a34a]" aria-hidden />
+      {m.common.autoRefresh}
+    </span>
   );
 }

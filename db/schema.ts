@@ -26,6 +26,7 @@ export const accounts = sqliteTable(
     id: text("id").primaryKey(),
     email: text("email"), // null for passkey-only logins
     privyUserId: text("privy_user_id"), // null for local demo accounts
+    passwordHash: text("password_hash"), // email + password logins (the product copy): scrypt, see lib/auth/password.ts
     createdAt: integer("created_at").notNull(),
   },
   (t) => [uniqueIndex("accounts_email_idx").on(t.email), uniqueIndex("accounts_privy_user_idx").on(t.privyUserId)],

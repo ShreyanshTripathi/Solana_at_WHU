@@ -3,7 +3,7 @@
 import { getIdentityToken, useLogin, usePrivy } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { verifyWithPrivy } from "@/app/account/actions";
+import { verifyWithPrivy } from "@/app/(app)/account/actions";
 import { useI18n } from "@/lib/i18n/client";
 
 // Re-verification before deleting the account: log out of Privy and log in again, so the
@@ -45,7 +45,7 @@ export function VerifyWithPrivy() {
           started.current = true;
           login();
         }}
-        className="rounded bg-blue-600 px-4 py-2 font-medium text-white disabled:opacity-60"
+        className="v-btn"
       >
         {busy ? t.waitingLogin : t.verifyPrivy}
       </button>

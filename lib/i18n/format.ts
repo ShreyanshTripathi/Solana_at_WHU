@@ -20,6 +20,7 @@ export function createFormat(locale: Locale) {
     pct: (x: number) => (locale === "de" ? `${Math.round(x * 100)} %` : `${Math.round(x * 100)}%`),
     time: (ts: number) => new Date(ts).toLocaleTimeString(tag, { ...zone, hour: "2-digit", minute: "2-digit" }),
     day: (ts: number) => new Date(ts).toLocaleDateString(tag, { ...zone, weekday: "short", day: "numeric", month: "short" }),
+    dayMonth: (ts: number) => new Date(ts).toLocaleDateString(tag, { ...zone, day: "numeric", month: "short" }),
     date: (ts: number) => new Date(ts).toLocaleDateString(tag, { ...zone, day: "numeric", month: "long", year: "numeric" }),
     month: (ts: number) => new Date(ts).toLocaleDateString(tag, { ...zone, month: "long", year: "numeric" }),
     monthName: (ts: number) => new Date(ts).toLocaleDateString(tag, { ...zone, month: "long" }),

@@ -47,7 +47,7 @@ export function DemoProgress({ initial }: { initial: DemoState }) {
   );
   return (
     <section
-      className="mt-6 rounded-lg border border-black/10 p-5 dark:border-white/15"
+      className="mt-6 v-card p-6"
       aria-live="polite"
     >
       <ol className="space-y-2 text-sm">

@@ -1,9 +1,10 @@
+// A headline number on a white card: the label, the big number, and a short line under it.
 export function StatTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-lg border border-black/10 p-4 dark:border-white/15">
-      <p className="text-xs opacity-70">{label}</p>
-      <p className="mt-1 text-xl font-semibold tabular-nums">{value}</p>
-      {sub && <p className="mt-1 text-xs opacity-70">{sub}</p>}
+    <div className="v-card px-[22px] py-5">
+      <p className="text-[13px] text-[#7a7a75]">{label}</p>
+      <p className="mt-2 text-[30px] font-semibold leading-tight tracking-[-1.1px] tabular-nums">{value}</p>
+      {sub && <p className="mt-1 text-[13px] text-[#7a7a75]">{sub}</p>}
     </div>
   );
 }

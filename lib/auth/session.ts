@@ -5,10 +5,24 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { db, schema } from "@/db/client";
 import { assertAdmin } from "./policy";
-import { SESSION_COOKIE, SESSION_TTL_SECONDS, signSession, VERIFIED_COOKIE, verifySession } from "./token";
+import {
+  SESSION_COOKIE,
+  SESSION_TTL_SECONDS,
+  signSession,
+  VERIFIED_COOKIE,
+  verifySession,
+} from "./token";
 
 export type Member = typeof schema.members.$inferSelect;
-export type Account = typeof schema.accounts.$inferSelect;
+type AccountRow = typeof schema.accounts.$inferSelect;
+// A login as the app sees it: the password hash never leaves the auth code, only whether there is one.
+export type Account = Omit<AccountRow, "passwordHash"> & {
+  hasPassword: boolean;
+};
+export const toAccount = ({ passwordHash, ...rest }: AccountRow): Account => ({
+  ...rest,
+  hasPassword: passwordHash !== null,
+});
 
 export interface CurrentSession {
   account: Account;
@@ -24,8 +38,15 @@ const cookieOptions = (maxAge: number) => ({
   maxAge,
 });
 
-export async function createSession(accountId: string, workspaceId: string | null): Promise<void> {
-  (await cookies()).set(SESSION_COOKIE, await signSession({ accountId, workspaceId }), cookieOptions(SESSION_TTL_SECONDS));
+export async function createSession(
+  accountId: string,
+  workspaceId: string | null,
+): Promise<void> {
+  (await cookies()).set(
+    SESSION_COOKIE,
+    await signSession({ accountId, workspaceId }),
+    cookieOptions(SESSION_TTL_SECONDS),
+  );
 }
 
 export async function deleteSession(): Promise<void> {
@@ -38,8 +59,16 @@ export function workspacesOf(accountId: string): Member[] {
   return db
     .select({ member: schema.members })
     .from(schema.accountWorkspaces)
-    .innerJoin(schema.members, eq(schema.members.id, schema.accountWorkspaces.memberId))
-    .where(and(eq(schema.accountWorkspaces.accountId, accountId), isNull(schema.members.closedAt)))
+    .innerJoin(
+      schema.members,
+      eq(schema.members.id, schema.accountWorkspaces.memberId),
+    )
+    .where(
+      and(
+        eq(schema.accountWorkspaces.accountId, accountId),
+        isNull(schema.members.closedAt),
+      ),
+    )
     .orderBy(asc(schema.accountWorkspaces.createdAt))
     .all()
     .map((r) => r.member);
@@ -48,18 +77,31 @@ export function workspacesOf(accountId: string): Member[] {
 // The login and its workspaces, read fresh from the database so changes apply at once.
 // A workspace id in the cookie only counts if this login still owns it.
 // cache() runs this once per request however many components ask.
-export const getCurrentSession = cache(async (): Promise<CurrentSession | null> => {
-  const claims = await verifySession((await cookies()).get(SESSION_COOKIE)?.value);
-  if (!claims) return null;
-  const account = db.select().from(schema.accounts).where(eq(schema.accounts.id, claims.accountId)).get();
-  if (!account) return null;
-  const workspaces = workspacesOf(account.id);
-  const workspace = workspaces.find((w) => w.id === claims.workspaceId) ?? workspaces[0] ?? null;
-  return { account, workspaces, workspace };
-});
+export const getCurrentSession = cache(
+  async (): Promise<CurrentSession | null> => {
+    const claims = await verifySession(
+      (await cookies()).get(SESSION_COOKIE)?.value,
+    );
+    if (!claims) return null;
+    const row = db
+      .select()
+      .from(schema.accounts)
+      .where(eq(schema.accounts.id, claims.accountId))
+      .get();
+    if (!row) return null;
+    const account = toAccount(row);
+    const workspaces = workspacesOf(account.id);
+    const workspace =
+      workspaces.find((w) => w.id === claims.workspaceId) ??
+      workspaces[0] ??
+      null;
+    return { account, workspaces, workspace };
+  },
+);
 
 // The open workspace: the member whose data pages show and actions change.
-export const getCurrentMember = async (): Promise<Member | null> => (await getCurrentSession())?.workspace ?? null;
+export const getCurrentMember = async (): Promise<Member | null> =>
+  (await getCurrentSession())?.workspace ?? null;
 
 export async function requireAccount(next = "/"): Promise<CurrentSession> {
   const session = await getCurrentSession();

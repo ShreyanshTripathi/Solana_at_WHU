@@ -1,0 +1,35 @@
+# Fly.io: the product copy of Volty (email + password logins, no demo accounts), next to the demo
+# copy in fly.toml. Deploy with:   fly deploy -c fly.prod.toml
+# Its own database (prod.db), volume and session secret; the Product | Demo switch links to the demo.
+app = "volty-prod"
+primary_region = "fra"
+
+[build]
+
+[env]
+  VOLTY_MODE = "prod"
+  DEMO_LOGIN = "false"
+  DATABASE_PATH = "/data/prod.db"
+  DEMO_URL = "https://volty-demo.fly.dev"
+  # Its own on-chain roof accounts, apart from the demo copy's ("web-") and local runs.
+  ROOF_ID_PREFIX = "prod-"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  # Nothing runs in the background here yet (no live demo), so the machine may sleep when idle;
+  # the first visit after that takes a few seconds to wake it.
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[mounts]]
+  source = "volty_prod_data"
+  destination = "/data"
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1
+
+swap_size_mb = 1024

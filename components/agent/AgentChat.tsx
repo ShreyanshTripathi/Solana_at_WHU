@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { applyAction, explainAction, proposeAction, type ProposeResult } from "@/app/agent/actions";
+import { applyAction, explainAction, proposeAction, type ProposeResult } from "@/app/(app)/agent/actions";
 import type { Change, Problem, Value } from "@/lib/ai/rules";
 import { useI18n } from "@/lib/i18n/client";
 

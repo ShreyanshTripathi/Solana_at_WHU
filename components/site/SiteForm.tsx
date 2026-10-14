@@ -1,15 +1,15 @@
 "use client";
 
 import { useActionState } from "react";
-import { registerSiteAction, type SiteFormState } from "@/app/site/actions";
+import { registerSiteAction, type SiteFormState } from "@/app/(app)/site/actions";
 import { useI18n } from "@/lib/i18n/client";
 
-const input = "mt-1 block w-full rounded border border-black/15 bg-transparent px-2 py-1 dark:border-white/20";
+const input = "v-input w-full";
 
 function Field(props: { name: string; label: string; hint?: string; value?: string; type?: string; step?: string; className?: string }) {
   return (
     <label className={`block ${props.className ?? ""}`}>
-      <span className="text-xs opacity-70">{props.label}</span>
+      <span className="text-[13px] text-[#5c5c57]">{props.label}</span>
       <input
         name={props.name}
         type={props.type ?? "text"}
@@ -19,7 +19,7 @@ function Field(props: { name: string; label: string; hint?: string; value?: stri
         required
         className={input}
       />
-      {props.hint && <span className="mt-0.5 block text-xs opacity-60">{props.hint}</span>}
+      {props.hint && <span className="mt-1 block text-xs text-[#7a7a75]">{props.hint}</span>}
     </label>
   );
 }
@@ -32,7 +32,7 @@ export function SiteForm({ defaultAnnualKwh }: { defaultAnnualKwh: number }) {
   return (
     <form action={action} className="space-y-4 text-sm">
       <fieldset className="grid gap-3 sm:grid-cols-6">
-        <legend className="mb-2 font-medium">{t.address}</legend>
+        <legend className="mb-2 text-[15px] font-semibold">{t.address}</legend>
         <Field name="street" label={t.street} value={v.street} className="sm:col-span-3" />
         <Field name="postcode" label={t.postcode} value={v.postcode} className="sm:col-span-1" />
         <Field name="city" label={t.city} value={v.city} className="sm:col-span-2" />
@@ -44,7 +44,7 @@ export function SiteForm({ defaultAnnualKwh }: { defaultAnnualKwh: number }) {
         value={v.meterId}
       />
       <fieldset className="grid gap-3 sm:grid-cols-4">
-        <legend className="mb-2 font-medium">{t.assets}</legend>
+        <legend className="mb-2 text-[15px] font-semibold">{t.assets}</legend>
         <Field name="pvKwp" label={t.pv} type="number" step="0.1" value={v.pvKwp ?? "0"} hint={t.zeroIfNone} />
         <Field name="batteryKwh" label={t.battery} type="number" step="0.1" value={v.batteryKwh ?? "0"} hint={t.zeroIfNone} />
         <Field name="evChargerKw" label={t.ev} type="number" step="0.1" value={v.evChargerKw ?? "0"} hint={t.evHint} />
@@ -57,7 +57,7 @@ export function SiteForm({ defaultAnnualKwh }: { defaultAnnualKwh: number }) {
           ))}
         </ul>
       )}
-      <button type="submit" disabled={pending} className="rounded bg-blue-600 px-4 py-2 font-medium text-white disabled:opacity-60">
+      <button type="submit" disabled={pending} className="v-btn">
         {pending ? t.checking : t.submit}
       </button>
     </form>

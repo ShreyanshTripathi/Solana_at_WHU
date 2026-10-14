@@ -10,6 +10,9 @@ primary_region = "fra"
   DEMO_LOGIN = "true"
   # Its own on-chain roof accounts, so this copy's database and a local one never pay into the same roof.
   ROOF_ID_PREFIX = "web-"
+  # The demo copy is the default one people open; the Product | Demo switch links to the product copy.
+  VOLTY_MODE = "demo"
+  PROD_URL = "https://volty-prod.fly.dev"
 
 [http_service]
   internal_port = 3000
