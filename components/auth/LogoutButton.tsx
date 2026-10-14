@@ -1,10 +1,10 @@
 "use client";
 
 import { usePrivy } from "@privy-io/react-auth";
-import { logout } from "@/app/login/actions";
+import { logout } from "@/app/(site)/login/actions";
 import { useI18n } from "@/lib/i18n/client";
 
-const button = "opacity-80 hover:opacity-100 underline-offset-2 hover:underline";
+const button = "text-[#5c5c57] hover:text-[#111111] underline-offset-2 hover:underline";
 
 // Ends both sessions: Privy's in the browser, then our cookie on the server.
 function PrivyLogoutButton() {
