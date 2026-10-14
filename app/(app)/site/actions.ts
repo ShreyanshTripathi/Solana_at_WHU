@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { db, schema } from "@/db/client";
 import { requireMember } from "@/lib/auth/session";
 import { errorCode } from "@/lib/errors";
+import { openGridOperator } from "@/lib/grid/openOperator";
+import { isDemoMode } from "@/lib/mode";
 import { openSiteOf, registerSite, siteFormSchema } from "@/lib/sites/register";
 
 export interface SiteFormState {
@@ -23,7 +25,11 @@ export async function registerSiteAction(_previous: SiteFormState, formData: For
 
   let status: string;
   try {
-    status = (await registerSite(member, parsed.data)).status;
+    // The demo checks meters against its stand-in grid operator (and rejects Koblenz); the product
+    // copy accepts homes in every area until a real operator connection exists.
+    const community = db.select().from(schema.communities).get();
+    const operator = isDemoMode() || !community ? undefined : openGridOperator(parsed.data, community.gridAreaId);
+    status = (await registerSite(member, parsed.data, operator)).status;
   } catch (e) {
     return { errors: [errorCode(e)], values };
   }
