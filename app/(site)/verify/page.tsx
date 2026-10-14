@@ -4,7 +4,7 @@ import { recentBatches } from "@/lib/settlement/verify";
 
 export const dynamic = "force-dynamic";
 
-const card = "rounded-lg border border-black/10 p-5 dark:border-white/15";
+const card = "v-card p-6";
 
 // Public: every settled hour, each with its record and the hash on Solana. No login needed.
 export default async function VerifyIndex() {
@@ -13,7 +13,7 @@ export default async function VerifyIndex() {
   const batches = recentBatches();
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-8">
-      <h1 className="text-2xl font-semibold">{t.title}</h1>
+      <h1 className="v-h1">{t.title}</h1>
       <p className="mt-1 text-sm opacity-70">{t.intro}</p>
       <section className={`mt-6 ${card}`}>
         {batches.length === 0 ? (
