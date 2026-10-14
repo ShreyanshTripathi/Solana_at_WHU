@@ -323,5 +323,7 @@ export function getBuyerDashboard(memberId: string, at?: string, rankBy: RankBy 
     rankBy,
     rule,
     choices,
+    // The market's expected price for each of the next 24 hours' quarter-hours (the same plan as the schedule).
+    priceForecast: plan.map((p) => ({ ts: p.ts, priceCt: p.priceCt })),
   };
 }
