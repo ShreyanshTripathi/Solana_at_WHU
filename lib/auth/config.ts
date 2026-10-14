@@ -1,5 +1,8 @@
+import { appMode } from "@/lib/mode";
+
 // Which login methods are switched on. Privy needs the app id and verification key; deleting
-// the Privy login as part of account deletion also needs the app secret. Demo login is local only.
+// the Privy login as part of account deletion also needs the app secret. Demo login is local only,
+// and never in the production copy of the app, which has email + password logins instead.
 export function authConfig() {
   const privyAppId = process.env.NEXT_PUBLIC_PRIVY_APP_ID || null;
   const privyVerificationKey = process.env.PRIVY_VERIFICATION_KEY?.replace(/\\n/g, "\n") || null;
@@ -8,6 +11,9 @@ export function authConfig() {
     privyVerificationKey,
     privyAppSecret: process.env.PRIVY_APP_SECRET || null,
     privyEnabled: Boolean(privyAppId && privyVerificationKey),
-    demoLogin: process.env.DEMO_LOGIN === "true",
+    demoLogin: process.env.DEMO_LOGIN === "true" && appMode() === "demo",
+    // Email + password: the product copy's own login, so it works without Privy. Off in the demo,
+    // where the demo accounts are the way in.
+    passwordLogin: appMode() === "prod",
   };
 }
