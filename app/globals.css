@@ -1,8 +1,26 @@
 @import "tailwindcss";
 
+/* Volty is light-only: `dark:` utilities apply only under an explicit .dark class (never set),
+   so a dark operating system no longer flips parts of the page. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --background: #fbfbf9;
+  --foreground: #111111;
+  --surface: #ffffff;
+  --line: #f0f0ec;
+  --line-strong: #e3e3de;
+  --muted: #5c5c57;
+  --faint: #7a7a75;
+  --tint: #f4f4f1;
+  --energy: #ff7a1a;
+  --energy-soft: #fff4ec;
+  --energy-ink: #c2410c;
+  --peer: #2563eb;
+  --ok: #15803d;
+  --ok-soft: #edf7ef;
+  --danger: #b42318;
 }
 
 @theme inline {
@@ -10,56 +28,241 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-instrument-serif);
+
+  /* The old accent was blue. Blue now maps to Volty's ink scale, so every former accent (buttons,
+     links, selected states, tints) takes the new black-and-white look without touching each page. */
+  --color-blue-50: #f7f7f5;
+  --color-blue-100: #f0f0ec;
+  --color-blue-200: #e3e3de;
+  --color-blue-300: #9a9a95;
+  --color-blue-400: #7a7a75;
+  --color-blue-500: #3a3a37;
+  --color-blue-600: #111111;
+  --color-blue-700: #000000;
+  --color-blue-800: #111111;
+  --color-blue-900: #111111;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-/* Chart tokens (dataviz reference palette), light then dark. */
+/* Chart tokens: orange for energy, blue for neighbouring communities, green for verified. */
 :root {
-  --viz-text: #0b0b0b;
-  --viz-text-secondary: #52514e;
-  --viz-muted: #898781;
-  --viz-grid: #e1e0d9;
-  --viz-axis: #c3c2b7;
-  --viz-series-1: #2a78d6;
-  --viz-series-2: #eb6834;
-  --viz-series-3: #1baf7a;
-  --viz-surface: #fcfcfb;
-  --viz-ring: rgba(11, 11, 11, 0.1);
-  --viz-shadow: 0 8px 24px rgba(20, 20, 18, 0.12);
-  --table-head: #f4f3ee;
-  --table-stripe: rgba(11, 11, 11, 0.018);
-  --table-hover: #eef4fc;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --viz-text: #ffffff;
-    --viz-text-secondary: #c3c2b7;
-    --viz-muted: #898781;
-    --viz-grid: #2c2c2a;
-    --viz-axis: #383835;
-    --viz-series-1: #3987e5;
-    --viz-series-2: #d95926;
-    --viz-series-3: #199e70;
-    --viz-surface: #1a1a19;
-    --viz-ring: rgba(255, 255, 255, 0.1);
-    --viz-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-    --table-head: #20201e;
-    --table-stripe: rgba(255, 255, 255, 0.02);
-    --table-hover: #1d2733;
-  }
+  --viz-text: #111111;
+  --viz-text-secondary: #5c5c57;
+  --viz-muted: #7a7a75;
+  --viz-grid: #f0f0ec;
+  --viz-axis: #e3e3de;
+  --viz-series-1: #ff7a1a;
+  --viz-series-2: #2563eb;
+  --viz-series-3: #16a34a;
+  /* Where a buyer's power came from: one colour per neighbour (validated set, light mode), utility grey. */
+  --viz-supply-1: #dc5f1c;
+  --viz-supply-2: #e3a23a;
+  --viz-supply-3: #dd74a0;
+  --viz-supply-4: #7f90ee;
+  --viz-supply-5: #36a67e;
+  --viz-supply-6: #a174d4;
+  --viz-supply-grid: #e4e4df;
+  --viz-now: #2f4fd8;
+  --viz-surface: #ffffff;
+  --viz-ring: rgba(17, 17, 17, 0.08);
+  --viz-shadow: 0 12px 30px -12px rgba(17, 17, 17, 0.2);
+  --table-head: #fafaf8;
+  --table-stripe: transparent;
+  --table-hover: #fff8f2;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), "Helvetica Neue", Arial, sans-serif;
+}
+
+::selection {
+  background: #ffe2cc;
+}
+
+:focus-visible {
+  outline: 2px solid #111111;
+  outline-offset: 2px;
+}
+
+/* Shared building blocks of the design. In the components layer, so a page can still adjust one
+   with a utility class (padding, width…). */
+@layer components {
+  .v-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  }
+  .v-card-raised {
+    background: var(--surface);
+    border: 1px solid #ecece8;
+    border-radius: 22px;
+    box-shadow: 0 30px 70px -45px rgba(17, 17, 17, 0.3);
+  }
+  .v-h1 {
+    font-size: 32px;
+    line-height: 1.1;
+    letter-spacing: -1.2px;
+    font-weight: 600;
+  }
+  .v-h2 {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+  }
+  .v-serif {
+    font-family: var(--font-instrument-serif), Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: -0.5px;
+  }
+  .v-muted {
+    color: var(--muted);
+  }
+  .v-faint {
+    color: var(--faint);
+  }
+  .v-num {
+    font-variant-numeric: tabular-nums;
+  }
+  .v-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    background: #111111;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 500;
+    border: 0;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .v-btn:hover {
+    background: #333331;
+  }
+  .v-btn:disabled {
+    background: var(--tint);
+    color: #9a9a95;
+    cursor: not-allowed;
+  }
+  .v-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #111111;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid #ecece8;
+    cursor: pointer;
+  }
+  .v-btn-secondary:hover {
+    background: var(--tint);
+  }
+  .v-btn-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--danger);
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid #f3c7c1;
+    cursor: pointer;
+  }
+  .v-input {
+    display: block;
+    margin-top: 6px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--line-strong);
+    background: #ffffff;
+    color: #111111;
+    font-size: 15px;
+  }
+  /* A slider: black filled track up to the value (--fill), light grey after, round black handle. */
+  .v-range {
+    display: block;
+    width: 100%;
+    height: 22px;
+    background: transparent;
+    appearance: none;
+    cursor: pointer;
+  }
+  .v-range::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(to right, #111111 var(--fill, 50%), #e7e7e2 var(--fill, 50%));
+  }
+  .v-range::-moz-range-track {
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(to right, #111111 var(--fill, 50%), #e7e7e2 var(--fill, 50%));
+  }
+  .v-range::-webkit-slider-thumb {
+    appearance: none;
+    margin-top: -6px;
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: #111111;
+    border: 2px solid #ffffff;
+    box-shadow: 0 1px 3px rgba(17, 17, 17, 0.3);
+  }
+  .v-range::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: #111111;
+    border: 2px solid #ffffff;
+    box-shadow: 0 1px 3px rgba(17, 17, 17, 0.3);
+  }
+  .v-range:focus-visible {
+    outline: 2px solid #111111;
+    outline-offset: 4px;
+    border-radius: 999px;
+  }
+  .v-input:focus {
+    outline: none;
+    border-color: #111111;
+    box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
+  }
+  .v-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--tint);
+    color: #4a4a46;
+  }
+  .v-pill-ok {
+    background: var(--ok-soft);
+    color: var(--ok);
+  }
+  .v-pill-energy {
+    background: var(--energy-soft);
+    color: var(--energy-ink);
+  }
+  .v-eyebrow {
+    font-size: 13px;
+    color: var(--faint);
+  }
 }
 
 /* Tables. Unlayered on purpose: these rules win over the per-cell utility classes (padding,
@@ -69,41 +272,42 @@ body {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  border: 1px solid var(--viz-grid);
-  border-radius: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
   overflow: hidden;
   font-variant-numeric: tabular-nums;
   background: var(--viz-surface);
+  font-size: 14px;
 }
 .kw-table thead {
   opacity: 1;
 }
 .kw-table th {
   background: var(--table-head);
-  color: var(--viz-text-secondary);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--viz-grid);
+  color: var(--faint);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
   white-space: nowrap;
 }
 .kw-table tr {
   border: 0;
 }
 .kw-table td {
-  padding: 8px 10px;
-  border-top: 1px solid var(--viz-grid);
+  padding: 12px;
+  border-top: 1px solid #f6f6f3;
 }
 .kw-table th:first-child,
 .kw-table td:first-child {
-  padding-left: 14px;
+  padding-left: 16px;
   white-space: nowrap;
 }
 .kw-table th:last-child,
 .kw-table td:last-child {
-  padding-right: 14px;
+  padding-right: 16px;
 }
 .kw-table tbody tr:first-child td {
   border-top: 0;
@@ -119,7 +323,7 @@ body {
 }
 /* Total rows (marked bold): a stronger rule above and the header's tint. */
 .kw-table tbody tr.font-semibold td {
-  border-top: 2px solid var(--viz-axis);
+  border-top: 1px solid #111111;
   background: var(--table-head);
   font-weight: 600;
 }
