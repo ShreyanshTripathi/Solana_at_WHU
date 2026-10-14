@@ -113,7 +113,7 @@ export function LiveRegion({
         : r.blocked[c.blockedReason ?? "not_sharing"];
 
   return (
-    <section className="mt-6 rounded-lg border border-black/10 p-5 dark:border-white/15">
+    <section className="mt-6 v-card p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="font-semibold">
           {running && (
