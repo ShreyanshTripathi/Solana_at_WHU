@@ -18,7 +18,7 @@ const RECENT = 12; // settlement hours shown before "show older"
 
 export const dynamic = "force-dynamic";
 
-const card = "rounded-lg border border-black/10 p-4 dark:border-white/15";
+const card = "v-card p-5";
 const short = (s: string) => `${s.slice(0, 4)}…${s.slice(-4)}`;
 const HHMM = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 
@@ -28,8 +28,8 @@ export default async function AdminPage() {
   const t = m.admin;
   if (!isAdmin(me)) {
     return (
-      <main className="mx-auto w-full max-w-5xl px-4 py-8">
-        <h1 className="text-2xl font-semibold">{t.title}</h1>
+      <main className="mx-auto w-full max-w-6xl px-6 py-8 md:px-8">
+        <h1 className="v-h1">{t.title}</h1>
         <p className="mt-2 text-sm">{t.staffOnly}</p>
       </main>
     );
@@ -43,8 +43,8 @@ export default async function AdminPage() {
 
   if (!d.community) {
     return (
-      <main className="mx-auto w-full max-w-5xl px-4 py-8">
-        <h1 className="text-2xl font-semibold">{t.title}</h1>
+      <main className="mx-auto w-full max-w-6xl px-6 py-8 md:px-8">
+        <h1 className="v-h1">{t.title}</h1>
         <p className="mt-2 text-sm">{t.noCommunity}</p>
       </main>
     );
@@ -90,8 +90,8 @@ export default async function AdminPage() {
   );
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8">
-      <h1 className="text-2xl font-semibold">{d.community.name}</h1>
+    <main className="mx-auto w-full max-w-6xl px-6 py-8 md:px-8">
+      <h1 className="v-h1">{d.community.name}</h1>
       <p className="mt-1 text-sm opacity-70">
         {t.subtitle(d.community.gridAreaId, d.members.length)}
       </p>
@@ -121,10 +121,10 @@ export default async function AdminPage() {
                 max={PRICES.gridCt}
                 step={0.5}
                 defaultValue={d.community.communityPriceCt}
-                className="mt-1 block w-28 rounded border border-black/15 bg-transparent px-2 py-1 dark:border-white/20"
+                className="v-input w-28"
               />
             </label>
-            <button type="submit" className="rounded bg-blue-600 px-3 py-1 text-white">
+            <button type="submit" className="v-btn">
               {m.common.save}
             </button>
           </form>
@@ -149,7 +149,7 @@ export default async function AdminPage() {
                 </label>
               ))}
             </fieldset>
-            <button type="submit" className="rounded bg-blue-600 px-3 py-1 text-white">
+            <button type="submit" className="v-btn">
               {m.common.save}
             </button>
             <p className="text-xs opacity-70">{t.marketNote}</p>
