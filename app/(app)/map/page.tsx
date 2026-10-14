@@ -24,9 +24,9 @@ export default async function Map3dPage({ searchParams }: PageProps<"/map">) {
     `rounded-md px-3 py-1.5 text-sm ${active ? "bg-blue-600/10 font-medium text-blue-700 dark:text-blue-300" : "opacity-80 hover:bg-black/5 dark:hover:bg-white/10"}`;
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-8">
+    <main className="mx-auto w-full max-w-6xl px-6 py-8 md:px-8">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="text-2xl font-semibold">{region ? t.region.title : t.title}</h1>
+        <h1 className="v-h1">{region ? t.region.title : t.title}</h1>
         <nav className="flex gap-1" aria-label={t.region.tabs}>
           <Link href="/map" className={tab(!region)} aria-current={!region ? "page" : undefined}>
             {t.region.tabNeighbourhood}
