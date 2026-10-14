@@ -6,7 +6,7 @@ import { explorerTxUrl } from "@/lib/solana/wallets";
 
 export const dynamic = "force-dynamic";
 
-const card = "rounded-lg border border-black/10 p-5 dark:border-white/15";
+const card = "v-card p-6";
 const ok = "text-green-700 dark:text-green-400";
 const bad = "text-red-700 dark:text-red-400";
 
@@ -29,7 +29,7 @@ export default async function VerifyHour({ params }: { params: Promise<{ batchId
           ← {t.title}
         </Link>
       </p>
-      <h1 className="mt-2 text-2xl font-semibold">{t.hourTitle(f.day(v.batch.periodStart), f.time(v.batch.periodStart), f.time(v.batch.periodEnd))}</h1>
+      <h1 className="v-h1 mt-2">{t.hourTitle(f.day(v.batch.periodStart), f.time(v.batch.periodStart), f.time(v.batch.periodEnd))}</h1>
 
       <section className={`mt-6 ${card}`}>
         <p className={`text-lg font-semibold ${verdict.cls}`}>{verdict.text}</p>
