@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { livePayments } from "@/lib/dashboard/livePayments";
 import { LivePayments } from "@/components/market/LivePayments";
+import { BuyingRules } from "@/components/buyer/BuyingRules";
 import { SupplyChart } from "@/components/buyer/SupplyChart";
 import { Map3DLoader } from "@/components/map3d/Map3DLoader";
 import { liveKey } from "@/lib/dashboard/liveKey";
@@ -31,7 +32,7 @@ import { saveBuyerRules } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-const card = "rounded-lg border border-black/10 p-4 dark:border-white/15";
+const card = "v-card p-5";
 const RANKS: RankBy[] = ["score", "reliability", "distance", "price"];
 
 function Swatch({ slot }: { slot: number }) {
@@ -62,8 +63,8 @@ export default async function BuyerPage({ searchParams }: PageProps<"/buyer">) {
 
   if (!d) {
     return (
-      <main className="mx-auto w-full max-w-5xl px-4 py-8">
-        <h1 className="text-2xl font-semibold">{t.title}</h1>
+      <main className="mx-auto w-full max-w-6xl px-6 py-8 md:px-8">
+        <h1 className="v-h1">{t.title}</h1>
         <p className="mt-2 text-sm">
           {t.empty.before}{" "}
           <Link
@@ -97,11 +98,11 @@ export default async function BuyerPage({ searchParams }: PageProps<"/buyer">) {
   const month = f.monthName(d.asOf);
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="text-2xl font-semibold">{d.member.name}</h1>
+    <main className="mx-auto w-full max-w-6xl px-6 py-8 md:px-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <h1 className="v-h1">{d.member.name}</h1>
         <div className="flex flex-wrap items-center gap-3">
-          <p className="text-sm opacity-70">
+          <p className="text-sm text-[#7a7a75]">
             {m.common.asOf(f.day(d.asOf), f.time(d.asOf))} ·{" "}
             {market?.nowCt != null
               ? m.market.now(f.ct(market.nowCt))
@@ -128,7 +129,7 @@ export default async function BuyerPage({ searchParams }: PageProps<"/buyer">) {
                 pathname: "/buyer",
                 query: { ...(at ? { at } : {}), as: p.id },
               }}
-              className={`rounded-full border px-3 py-1 ${p.id === d.member.id ? "border-blue-600 font-medium" : "border-black/15 opacity-80 dark:border-white/20"}`}
+              className={`rounded-full border px-3.5 py-1.5 ${p.id === d.member.id ? "border-[#111111] bg-[#111111] text-white" : "border-[#ecece8] bg-white text-[#4a4a46] hover:border-[#cfcfc8]"}`}
             >
               {p.name}
             </Link>
@@ -173,22 +174,23 @@ export default async function BuyerPage({ searchParams }: PageProps<"/buyer">) {
       </section>
 
       <section className={`mt-6 ${card}`}>
-        <h2 className="font-semibold">
-          {top
-            ? t.chartTitle(
-                pct(
-                  d.today.importKwh > 0
-                    ? d.today.sharedKwh / d.today.importKwh
-                    : 0,
-                ),
-                top.name,
-              )
-            : t.chartTitleNone}
-        </h2>
-        <p className="mt-1 text-xs opacity-70">{t.chartNote}</p>
-        <div className="mt-3">
-          <SupplyChart points={d.chart} series={d.sellers} />
-        </div>
+        <SupplyChart
+          points={d.chart}
+          series={d.sellers}
+          title={
+            top
+              ? t.chartTitle(
+                  pct(
+                    d.today.importKwh > 0
+                      ? d.today.sharedKwh / d.today.importKwh
+                      : 0,
+                  ),
+                  top.name,
+                )
+              : t.chartTitleNone
+          }
+          note={t.chartNote}
+        />
       </section>
 
       {market && (
@@ -312,12 +314,12 @@ export default async function BuyerPage({ searchParams }: PageProps<"/buyer">) {
       </div>
 
       <section className={`mt-4 ${card}`}>
-        <h2 className="font-semibold">{t.next24}</h2>
-        <p className="mt-1 text-xs opacity-70">{t.next24Note}</p>
+        <h2 className="text-lg font-semibold tracking-tight">{t.next24}</h2>
+        <p className="mt-1 text-sm text-[#7a7a75]">{t.next24Note}</p>
         {d.schedule.length === 0 ? (
           <p className="mt-2 text-sm opacity-70">{t.next24None}</p>
         ) : (
-          <div className="mt-2 overflow-x-auto">
+          <div className="mt-4 overflow-x-auto">
             <table className="kw-table w-full text-sm">
               <thead className="text-left text-xs opacity-70">
                 <tr>
@@ -347,22 +349,28 @@ export default async function BuyerPage({ searchParams }: PageProps<"/buyer">) {
                     key={h.hourTs}
                     className="border-t border-black/5 dark:border-white/10"
                   >
-                    <td className="py-1">
-                      {f.day(h.hourTs)} {f.time(h.hourTs)}
+                    <td className="whitespace-nowrap py-2.5 pr-4 align-baseline font-mono text-[13px] text-[#5c5c57]">
+                      {f.time(h.hourTs)}–{f.time(h.hourTs + 3_600_000)}
+                      {f.day(h.hourTs) !== f.day(d.schedule[0].hourTs) && (
+                        <span className="block text-xs">{t.tomorrowShort}</span>
+                      )}
                     </td>
                     {d.sellers
                       .filter((s) => s.siteId !== d.site.id)
                       .map((s) => (
-                        <td key={s.siteId} className="py-1 text-right">
+                        <td
+                          key={s.siteId}
+                          className="py-2.5 text-right align-baseline"
+                        >
                           {h.bySeller[s.siteId]
                             ? f.num(h.bySeller[s.siteId], 2)
                             : "–"}
                         </td>
                       ))}
-                    <td className="py-1 text-right">
+                    <td className="py-2.5 text-right align-baseline">
                       {f.num(h.utilityKwh, 2)}
                     </td>
-                    <td className="py-1 pl-4">
+                    <td className="py-2.5 pl-4 align-baseline">
                       {h.backup ?? t.scheduleTable.utility}
                       {h.backup && h.backupPct !== undefined && (
                         <span className="text-xs opacity-60">
@@ -510,75 +518,17 @@ export default async function BuyerPage({ searchParams }: PageProps<"/buyer">) {
       </section>
 
       <section className={`mt-4 ${card}`}>
-        <h2 className="font-semibold">{t.rules}</h2>
-        <form action={saveBuyerRules} className="mt-3 space-y-3 text-sm">
-          <input type="hidden" name="memberId" value={d.member.id} />
-          <div className="flex flex-wrap gap-6">
-            <label className="block">
-              <span className="text-xs opacity-70">{t.maxPrice}</span>
-              <input
-                type="number"
-                name="maxPriceCt"
-                min={0}
-                max={PRICES.gridCt}
-                step={0.5}
-                defaultValue={d.rule?.maxPriceCt ?? d.priceCt}
-                className="mt-1 block w-32 rounded border border-black/15 bg-transparent px-2 py-1 dark:border-white/20"
-              />
-            </label>
-            <label className="block">
-              <span className="text-xs opacity-70">{t.maxDistance}</span>
-              <input
-                type="number"
-                name="maxDistanceM"
-                min={100}
-                max={20000}
-                step={100}
-                defaultValue={d.rule?.maxDistanceM ?? 3000}
-                className="mt-1 block w-32 rounded border border-black/15 bg-transparent px-2 py-1 dark:border-white/20"
-              />
-            </label>
-          </div>
-          <fieldset>
-            <legend className="text-xs opacity-70">{t.prefer}</legend>
-            <div className="mt-1 flex flex-wrap gap-3">
-              {d.choices.map((c) => (
-                <label key={c.memberId} className="flex items-center gap-1">
-                  <input
-                    type="checkbox"
-                    name="preferred"
-                    value={c.memberId}
-                    defaultChecked={d.rule?.preferred.includes(c.memberId)}
-                  />
-                  {c.name}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-          <fieldset>
-            <legend className="text-xs opacity-70">{t.never}</legend>
-            <div className="mt-1 flex flex-wrap gap-3">
-              {d.choices.map((c) => (
-                <label key={c.memberId} className="flex items-center gap-1">
-                  <input
-                    type="checkbox"
-                    name="blocked"
-                    value={c.memberId}
-                    defaultChecked={d.rule?.blocked.includes(c.memberId)}
-                  />
-                  {c.name}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-          <button
-            type="submit"
-            className="rounded bg-blue-600 px-3 py-1 text-white"
-          >
-            {m.common.saveRules}
-          </button>
-          <p className="text-xs opacity-70">{t.rulesNote}</p>
-        </form>
+        <h2 className="text-lg font-semibold tracking-tight">{t.rules}</h2>
+        <BuyingRules
+          action={saveBuyerRules}
+          memberId={d.member.id}
+          choices={d.choices}
+          maxPriceCt={d.rule?.maxPriceCt ?? d.priceCt}
+          gridCt={PRICES.gridCt}
+          maxDistanceM={d.rule?.maxDistanceM ?? 3000}
+          preferred={d.rule?.preferred ?? []}
+          blocked={d.rule?.blocked ?? []}
+        />
       </section>
     </main>
   );
