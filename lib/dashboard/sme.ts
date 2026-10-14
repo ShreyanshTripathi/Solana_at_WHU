@@ -6,35 +6,90 @@ import { localMidnight, localTime } from "@/lib/sim/clock";
 import { checkSme, smeStatus } from "@/lib/sme";
 import { resolveAsOf } from "./time";
 
-const { members, sites, businessProfiles, anchorAgreements, allocations, intervalReadings } = schema;
+const {
+  members,
+  sites,
+  businessProfiles,
+  anchorAgreements,
+  allocations,
+  intervalReadings,
+} = schema;
 
 const HOUR_MS = 60 * 60 * 1000;
 const GRID_CO2_KG_PER_KWH = 0.36; // approximate German grid average
 
 export function smePersonas() {
-  return db.select({ id: members.id, name: members.name }).from(members).where(eq(members.kind, "sme")).all();
+  return db
+    .select({ id: members.id, name: members.name })
+    .from(members)
+    .where(eq(members.kind, "sme"))
+    .all();
 }
 
-const hhmm = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+const hhmm = (minutes: number) =>
+  `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
 
 export type SmeDashboard = NonNullable<ReturnType<typeof getSmeDashboard>>;
 
 export function getSmeDashboard(memberId: string, at?: string) {
-  const member = db.select().from(members).where(eq(members.id, memberId)).get();
-  const site = db.select().from(sites).where(eq(sites.memberId, memberId)).get();
+  const member = db
+    .select()
+    .from(members)
+    .where(eq(members.id, memberId))
+    .get();
+  const site = db
+    .select()
+    .from(sites)
+    .where(eq(sites.memberId, memberId))
+    .get();
   if (!member) return null;
 
-  const profile = db.select().from(businessProfiles).where(eq(businessProfiles.memberId, memberId)).get() ?? null;
-  const check = profile ? checkSme(profile.staff, profile.turnoverEur, profile.balanceSheetEur) : null;
+  const profile =
+    db
+      .select()
+      .from(businessProfiles)
+      .where(eq(businessProfiles.memberId, memberId))
+      .get() ?? null;
+  const check = profile
+    ? checkSme(profile.staff, profile.turnoverEur, profile.balanceSheetEur)
+    : null;
   // Whether this business takes part in sharing right now (the same rule matching uses).
   const status = smeStatus(member.smeVerified, profile?.checkedAt, Date.now());
-  const anchorRow = db.select().from(anchorAgreements).where(eq(anchorAgreements.memberId, memberId)).get();
-  const anchor = anchorRow ? { ...anchorRow, from: hhmm(anchorRow.fromMinute), to: hhmm(anchorRow.toMinute) } : null;
+  const anchorRow = db
+    .select()
+    .from(anchorAgreements)
+    .where(eq(anchorAgreements.memberId, memberId))
+    .get();
+  const anchor = anchorRow
+    ? {
+        ...anchorRow,
+        from: hhmm(anchorRow.fromMinute),
+        to: hhmm(anchorRow.toMinute),
+      }
+    : null;
   // A new business workspace has no meter yet, but can already pass the SME check.
-  if (!site) return { member, site: null, profile, check, anchor, smeStatus: status, asOf: null };
+  if (!site)
+    return {
+      member,
+      site: null,
+      profile,
+      check,
+      anchor,
+      smeStatus: status,
+      asOf: null,
+    };
 
   const asOf = resolveAsOf(site.id, at);
-  if (asOf == null) return { member, site, profile, check, anchor, smeStatus: status, asOf: null };
+  if (asOf == null)
+    return {
+      member,
+      site,
+      profile,
+      check,
+      anchor,
+      smeStatus: status,
+      asOf: null,
+    };
 
   const dayStart = localMidnight(asOf);
   const [year, month] = localTime(asOf).dateKey.split("-");
@@ -43,21 +98,50 @@ export function getSmeDashboard(memberId: string, at?: string) {
   const received = db
     .select()
     .from(allocations)
-    .where(and(eq(allocations.buyerSiteId, site.id), eq(allocations.kind, "final"), gte(allocations.ts, monthStart), lte(allocations.ts, asOf)))
+    .where(
+      and(
+        eq(allocations.buyerSiteId, site.id),
+        eq(allocations.kind, "final"),
+        gte(allocations.ts, monthStart),
+        lte(allocations.ts, asOf),
+      ),
+    )
     .all();
-  const isAnchor = (priceCt: number) => anchor !== null && priceCt === anchor.priceCt;
+  const isAnchor = (priceCt: number) =>
+    anchor !== null && priceCt === anchor.priceCt;
 
   const readings = db
     .select()
     .from(intervalReadings)
-    .where(and(eq(intervalReadings.siteId, site.id), gte(intervalReadings.ts, monthStart), lte(intervalReadings.ts, asOf)))
+    .where(
+      and(
+        eq(intervalReadings.siteId, site.id),
+        gte(intervalReadings.ts, monthStart),
+        lte(intervalReadings.ts, asOf),
+      ),
+    )
     .all();
 
   // Daily history for this month: anchor kWh against the cap, other neighbour kWh, and the utility.
-  const days = new Map<string, { dateKey: string; dayStart: number; anchorKwh: number; otherKwh: number; importKwh: number }>();
+  const days = new Map<
+    string,
+    {
+      dateKey: string;
+      dayStart: number;
+      anchorKwh: number;
+      otherKwh: number;
+      importKwh: number;
+    }
+  >();
   const dayOf = (ts: number) => {
     const key = localTime(ts).dateKey;
-    const row = days.get(key) ?? { dateKey: key, dayStart: localMidnight(ts), anchorKwh: 0, otherKwh: 0, importKwh: 0 };
+    const row = days.get(key) ?? {
+      dateKey: key,
+      dayStart: localMidnight(ts),
+      anchorKwh: 0,
+      otherKwh: 0,
+      importKwh: 0,
+    };
     days.set(key, row);
     return row;
   };
@@ -68,26 +152,95 @@ export function getSmeDashboard(memberId: string, at?: string) {
     else row.otherKwh += a.kwh;
   }
   const history = [...days.values()].sort((a, b) => b.dayStart - a.dayStart);
-  const today = history.find((d) => d.dayStart === dayStart) ?? { anchorKwh: 0, otherKwh: 0, importKwh: 0 };
+  const today = history.find((d) => d.dayStart === dayStart) ?? {
+    anchorKwh: 0,
+    otherKwh: 0,
+    importKwh: 0,
+  };
+
+  // The anchor agreement at a glance: who supplies it most this month, what it saves in a typical
+  // month (this month's daily average so far, over 30 days), and since when it has delivered (the
+  // first allocation at its price; there is no separate start date stored).
+  const anchorReceived = received.filter((a) => isAnchor(a.priceCt));
+  const bySeller = new Map<string, number>();
+  for (const a of anchorReceived)
+    bySeller.set(a.sellerSiteId, (bySeller.get(a.sellerSiteId) ?? 0) + a.kwh);
+  const siteMember = new Map(
+    db
+      .select({ id: sites.id, memberId: sites.memberId })
+      .from(sites)
+      .all()
+      .map((s) => [s.id, s.memberId]),
+  );
+  const memberName = new Map(
+    db
+      .select({ id: members.id, name: members.name })
+      .from(members)
+      .all()
+      .map((m) => [m.id, m.name]),
+  );
+  const anchorSuppliers = [...bySeller.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([siteId]) => memberName.get(siteMember.get(siteId) ?? "") ?? siteId);
+  const daysSoFar = Math.max(1, days.size);
+  const anchorSavedMicro = anchorReceived.reduce(
+    (sum, a) => sum + energyAmountMicro(a.kwh, PRICES.gridCt - a.priceCt),
+    0,
+  );
+  const firstAnchor = anchor
+    ? db
+        .select({ ts: allocations.ts })
+        .from(allocations)
+        .where(
+          and(
+            eq(allocations.buyerSiteId, site.id),
+            eq(allocations.kind, "final"),
+            eq(allocations.priceCt, anchor.priceCt),
+            lte(allocations.ts, asOf),
+          ),
+        )
+        .orderBy(allocations.ts)
+        .limit(1)
+        .get()
+    : undefined;
 
   const sharedMonth = received.reduce((sum, a) => sum + a.kwh, 0);
   const importMonth = readings.reduce((sum, r) => sum + r.importKwh, 0);
-  const savedMicro = received.reduce((sum, a) => sum + energyAmountMicro(a.kwh, PRICES.gridCt - a.priceCt), 0);
+  const savedMicro = received.reduce(
+    (sum, a) => sum + energyAmountMicro(a.kwh, PRICES.gridCt - a.priceCt),
+    0,
+  );
 
   // Hourly profile for today: the bakery's use against the whole neighbourhood's surplus.
   const allToday = db
-    .select({ siteId: intervalReadings.siteId, ts: intervalReadings.ts, loadKwh: intervalReadings.loadKwh, exportKwh: intervalReadings.exportKwh })
+    .select({
+      siteId: intervalReadings.siteId,
+      ts: intervalReadings.ts,
+      loadKwh: intervalReadings.loadKwh,
+      exportKwh: intervalReadings.exportKwh,
+    })
     .from(intervalReadings)
-    .where(and(gte(intervalReadings.ts, dayStart), lte(intervalReadings.ts, asOf)))
+    .where(
+      and(gte(intervalReadings.ts, dayStart), lte(intervalReadings.ts, asOf)),
+    )
     .all();
   const profileByHour = Array.from({ length: 24 }, (_, h) => {
     const from = dayStart + h * HOUR_MS;
-    const inHour = allToday.filter((r) => r.ts >= from && r.ts < from + HOUR_MS);
+    const inHour = allToday.filter(
+      (r) => r.ts >= from && r.ts < from + HOUR_MS,
+    );
     const measured = inHour.length > 0;
     return {
       hourTs: from,
-      usage: measured ? inHour.filter((r) => r.siteId === site.id).reduce((sum, r) => sum + r.loadKwh, 0) : null,
-      surplus: measured ? inHour.reduce((sum, r) => sum + r.exportKwh, 0) : null,
+      usage: measured
+        ? inHour
+            .filter((r) => r.siteId === site.id)
+            .reduce((sum, r) => sum + r.loadKwh, 0)
+        : null,
+      surplus: measured
+        ? inHour.reduce((sum, r) => sum + r.exportKwh, 0)
+        : null,
     };
   });
 
@@ -113,5 +266,10 @@ export function getSmeDashboard(memberId: string, at?: string) {
     },
     history,
     profileByHour,
+    anchorInfo: {
+      suppliers: anchorSuppliers,
+      monthlySavedEur: (anchorSavedMicro / MICRO_PER_EUR / daysSoFar) * 30,
+      since: firstAnchor?.ts ?? null,
+    },
   };
 }
