@@ -32,7 +32,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const card = "rounded-lg border border-black/10 p-4 dark:border-white/15";
+const card = "v-card p-5";
 
 export default async function SellerPage({
   searchParams,
@@ -56,8 +56,8 @@ export default async function SellerPage({
 
   if (!d) {
     return (
-      <main className="mx-auto w-full max-w-5xl px-4 py-8">
-        <h1 className="text-2xl font-semibold">{t.title}</h1>
+      <main className="mx-auto w-full max-w-6xl px-6 py-8 md:px-8">
+        <h1 className="v-h1">{t.title}</h1>
         <p className="mt-2 text-sm">
           {t.empty.before}{" "}
           <Link
@@ -101,11 +101,11 @@ export default async function SellerPage({
     (chargeLimit < d.site.batteryKwh ? t.reasonCapped(f.kwh(chargeLimit)) : "");
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="text-2xl font-semibold">{d.member.name}</h1>
+    <main className="mx-auto w-full max-w-6xl px-6 py-8 md:px-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <h1 className="v-h1">{d.member.name}</h1>
         <div className="flex flex-wrap items-center gap-3">
-          <p className="text-sm opacity-70">
+          <p className="text-sm text-[#7a7a75]">
             {m.common.asOf(f.day(d.asOf), f.time(d.asOf))} ·{" "}
             {f.num(d.site.pvKwp, 1)} kWp
             {d.site.batteryKwh > 0
@@ -134,7 +134,7 @@ export default async function SellerPage({
                 pathname: "/seller",
                 query: at ? { as: p.id, at } : { as: p.id },
               }}
-              className={`rounded-full border px-3 py-1 ${p.id === d.member.id ? "border-blue-600 font-medium" : "border-black/15 opacity-80 dark:border-white/20"}`}
+              className={`rounded-full border px-3.5 py-1.5 ${p.id === d.member.id ? "border-[#111111] bg-[#111111] text-white" : "border-[#ecece8] bg-white text-[#4a4a46] hover:border-[#cfcfc8]"}`}
             >
               {p.name}
             </Link>
@@ -449,7 +449,7 @@ export default async function SellerPage({
             <p className="text-xs opacity-60">{m.common.rulesApplyFromNow}</p>
             <button
               type="submit"
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              className="v-btn"
             >
               {m.common.saveRules}
             </button>
