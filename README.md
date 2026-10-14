@@ -1,11 +1,9 @@
 # Volty
 
-**Volty demo: https://volty-demo.fly.dev/**  
-**Artifacts folder: https://drive.google.com/drive/folders/1vbqW8b2CV9ltiMsMeulIYvEvvXsGVw33?usp=drive_link**  
-**Volty pitch deck: https://docs.google.com/presentation/d/186qZuUo_IH702d5M_VmfL7xD2e5Zy7FWi3DHOgaPwQo/edit?usp=drive_link**  
-**Volty presentation: https://docs.google.com/videos/d/1wA9bhb2Bx1MJo5Vtm8tEgPh-HTe1ExutXuphdJKRvfs/edit?usp=drive_link**  
-**Volty short demo run: https://docs.google.com/videos/d/1L8Rs9VCJGycKlPt8rmuUnacCB9BLnbhbZ8jZnGv9_cM/edit?usp=drive_link**  
-**Volty long demo run: https://docs.google.com/videos/d/12LyXiXgRSIVxkVLi-fdtCVWp3AhM9I6TbYqUbWr9U0Y/edit?usp=drive_link**
+**Live demo:** https://volty-demo.fly.dev (one-click demo accounts, no password)  
+**Live product:** https://volty-prod.fly.dev (email and password: `mia.hoffmann@example.com` / `volty-demo`, or `admin` / `admin` for the Stadtwerk console)  
+**Pitch video:** https://www.youtube.com/watch?v=CZ3PgSd27oo  
+**Demo video:** https://www.youtube.com/watch?v=81t2OKlB6Mk
 
 Neighbourhood energy sharing with 15-minute settlement on Solana. Households and small businesses in one grid area share rooftop solar under §42c EnWG. Every hour, buyers pay their neighbours and their roof's investors directly in euro stablecoins, from wallets they control, within a spending limit they set and can revoke. Roofs funded through **Solar Now, Pay Never** repay their investors through an on-chain program, and every hour's trades are published with a hash on Solana that anyone can check. Where the law requires the supplier to settle (Germany's default under §42c), the Stadtwerk pays sellers instead, on the same rails.
 
@@ -19,6 +17,80 @@ The market itself stays off-chain: meter data is personal data, and matching run
 
 This repository is the WHU Hackathon 2026 MVP. It runs on **Solana devnet** with a test token (tEURC) and simulated smart meters.
 
+## The frontend
+
+The interface was redesigned for the product: a white, quiet look (Geist for text, Instrument Serif for accents, Volty orange for energy), one design for the public site and the app. The shared building blocks are CSS classes in `app/globals.css` (`.v-card`, `.v-btn`, `.v-pill`, `.v-input`, `.v-range` and others), and the charts use one validated colour palette (`lib/viz.ts`).
+
+The app has two parts, as Next.js route groups:
+
+- **Public site** (`app/(site)`): the landing page, login, sign-up, the live demo and the public record (`/verify`), with a top bar and a black footer (`components/shell/SiteHeader.tsx`).
+  - **Landing page** (`app/(site)/page.tsx`): the hero with the two promises (*settled on Solana, paid in euros* and *AI agents do the work*) and a preview of the app, then the four AI agents with a "sunny day" timeline, the Solana section with the busiest settled hour as a live receipt, the price gap, an animated 3D street (`components/landing/StreetMap3D.tsx`), how it works, who it's for, the proof receipt, the Stadtwerk pilot form and links to §42c EnWG and EU Directive 2024/1711.
+- **App** (`app/(app)`): every logged-in page, with a sidebar (`components/shell/Sidebar.tsx`) holding the workspace switcher, the pages for this workspace's role, the **Product | Demo** switch, DE | EN and logout. Logging in opens `/start`, which sends each workspace to its home: selling for a household with solar, buying for one without, the business page, the Stadtwerk console or the roofs for investors.
+
+What the main app pages show:
+
+- **AI agent** (`/agent`): what the four agents (forecast, matching, sun, payment) looked at, decided and achieved today; a **solar predictor** with the forecast sun through the day, its likely range and a clear-sky line, against what the panels measured (today and tomorrow); the agents' **timeline** of the day; the **price forecast** for the next 24 hours; **why this supplier** (the matching agent's ranking and backup); what the battery and car agents **earned this month**; and whether the forecast **is learning** (its error day by day against the standard model). Data: `lib/dashboard/agentDay.ts` and `lib/dashboard/agentInsights.ts`.
+- **Buying** (`/buyer`): where each hour's power came from as stacked bars (with a size slider), payments, the next 24 hours in a table with backups, the 3D map with only the homes you traded with, and the buying rules as sliders and neighbour pills (`components/buyer/BuyingRules.tsx`).
+- **Business** (`/sme`): the anchor agreement at a glance (window, daily cap, price, who supplies it, the monthly saving), the SME check, and a "your own roof could pay for itself" link to Solar Now, Pay Never.
+- **Live map** (`/map`): the real 3D map with small house graphics and glowing arcs, moving dots for the energy (`components/map3d`).
+
+## Product and demo copies
+
+The same code runs as two copies, chosen by `VOLTY_MODE` (`lib/mode.ts`), each with its own database:
+
+| | Demo (`VOLTY_MODE=demo`) | Product (`VOLTY_MODE=prod`) |
+| --- | --- | --- |
+| Live | https://volty-demo.fly.dev | https://volty-prod.fly.dev |
+| Database | `data/kiezwatt.db` (the demo neighbourhood) | `data/prod.db` (`npm run prod:init`) |
+| Logins | one-click demo accounts | email and password (scrypt hashes, `lib/auth/password.ts`), or Privy when configured |
+| Sites | checked against the stand-in grid operator (Koblenz is rejected) | any valid meter, at the address typed (`lib/grid/openOperator.ts`), until a real operator connection exists |
+| Live demo | yes | no |
+
+Run both locally side by side: `npm run dev:demo` (port 3001) and `npm run dev:prod` (port 3002). The **Product | Demo** switch opens the same page in the other copy (`PROD_URL`, `DEMO_URL`).
+
+**Deploying (Fly.io):** `fly deploy` deploys the demo (`fly.toml`), `fly deploy -c fly.prod.toml` the product. Each has its own volume and `SESSION_SECRET`. Data goes up as a bundle unpacked on start: `sh scripts/pack-data.sh` (demo) or `DB=prod sh scripts/pack-data.sh ../volty-prod-data.tgz` (product), uploaded to `/data/restore.tgz`. The live product is filled with made-up members and a simulated week by `scripts/seed-prod-fake.ts`, which only runs on a fresh database.
+
+## Using the app
+
+A walk through what you can do, in the order a new user would. Every step works on the live copies; nothing needs installing.
+
+### Try the demo (5 minutes)
+
+1. Open https://volty-demo.fly.dev and press **▶ Run the live demo** on the home page. The neighbourhood is simulated hour by hour up to the next sunny afternoon, and every hour is settled on Solana devnet. `/demo` shows each hour's price, payments and transactions as they happen, plus a seven-step guided tour.
+2. **Log in** and pick a person under **Demo accounts** (one click, no password):
+   - **Anna Schmitt** (solar and battery): **Selling** shows her roof, battery and earnings; **AI agent** shows what the four agents did, the solar predictor, the day's battery decisions and whether the forecast is learning.
+   - **Ben** (no panels, electric car): **Buying** shows where each hour's power came from, the next 24 hours with backups and the map of who supplied him; **AI agent** shows his car's charging plan.
+   - **Bäckerei Müller** (business): **Business** shows the anchor agreement and the SME check.
+   - **Lena** (investor): **Solar Now, Pay Never** shows the Weber roof repaying its investors on-chain.
+   - **Stadtwerk Vallendar**: **Stadtwerk console** shows members, every hourly settlement with its Solana transaction, and the market switches.
+3. Open **Proof** (`/verify`, no login) and check any hour's hash against Solana yourself.
+
+### Use the product as a new member
+
+1. Open https://volty-prod.fly.dev, press **Get started** and sign up with an email and a password (8 characters or more).
+2. **Create a workspace:** a **Household** or a **Business**. One login can own several and switch in the sidebar.
+3. **Register your home** (**Your home**): street, postcode, the meter's market location ID (11 digits from the electricity bill, for example `50178002206`), and what's there: solar kWp, battery kWh, EV charger kW and yearly use. The home is approved straight away and joins matching from the next quarter-hour.
+4. **Set your rules:**
+   - Buyers set a maximum price and distance, and neighbours to prefer or never buy from (**Buying → Buying rules**).
+   - Sellers set a minimum price and a battery reserve for the evening (**Selling → Selling rules**).
+5. **Switch on the agents** (**AI agent**): smart battery and smart car charging (with a "ready by" time). You can also tell the agent what you want in your own words; that needs the language model running on the server (see [AI trading agents](#ai-trading-agents)).
+6. **Payments:** when the Stadtwerk has peer-to-peer payments on, approve a monthly spending limit on **Buying** (the payment agent suggests one from your last 14 days). Volty never takes more, and you can revoke it at any time. Otherwise the Stadtwerk pays sellers and bills buyers monthly.
+7. **Businesses** fill in the SME check (**Business**) and can set up an anchor agreement for their opening hours.
+8. **Statements** shows each month's energy, VAT and Solana payouts, with a PDF download.
+
+To see the product with data, log in as `mia.hoffmann@example.com` / `volty-demo` (household with solar and battery) or `cafe.morgenrot@example.com` / `volty-demo` (business).
+
+### Run it as the Stadtwerk
+
+Log in as `admin` / `admin` on the product copy (or as Stadtwerk Vallendar in the demo) and open **Stadtwerk console**:
+
+- **Market and payments:** choose a fixed community price or the 15-minute auction, and whether the Stadtwerk pays sellers or neighbours pay each other.
+- **Members and sites:** every member, wallet and site registration, with the reason for any rejection.
+- **Settlements:** every hour's batch with its hash and Solana transactions, the treasury balance and a CSV export.
+- **Neighbouring communities:** switch on sharing with nearby communities and choose paid trades or energy credits.
+
+Note: meter readings are simulated in both copies. In the live product nothing simulates new homes in the background yet, so a home you register shows data once the simulator runs (`DATABASE_PATH=data/prod.db npm run sim -- --hours 24` locally).
+
 ## Quick start
 
 Needs Node 24.
@@ -29,7 +101,7 @@ npm run db:push          # create the SQLite database in data/
 npm run setup:devnet     # create demo wallets, the tEURC token and token accounts
 npm run seed             # load the demo neighbourhood (links devnet wallets if present)
 npm run sim -- --hours 24 --date 2026-10-01 --settle
-npm run dev              # http://localhost:3000
+npm run dev:demo         # http://localhost:3001 (the product copy: npm run dev:prod, port 3002)
 ```
 
 `setup:devnet` tries a devnet airdrop for the Stadtwerk treasury. The airdrop is often rate-limited: if it fails, paste the printed treasury address into [faucet.solana.com](https://faucet.solana.com), then run the script again.
@@ -55,8 +127,8 @@ Without devnet, leave out `--settle`: the simulation still matches, posts the le
 
 ## Accounts, workspaces and logging in
 
-- **Sign up and log in** at `/signup` and `/login` with an email one-time code or a passkey through [Privy](https://privy.io). There's no password and no seed phrase. The server checks Privy's signature on the identity token, then sets its own session cookie (`kw_session`, HttpOnly, 7 days).
-- **Workspaces:** after signing up you create a **Household** or **Business** workspace. One login can own both (up to 5) and switch from the workspace menu in the top bar. Each workspace is its own member, with its own Solana wallet, ledger, balances and bills: the first uses the wallet Privy creates at signup, and each further workspace gets an additional embedded wallet. The server only accepts a wallet that appears in Privy's signed token and isn't used by another workspace.
+- **Sign up and log in** at `/signup` and `/login`. The product copy has email and password logins (stored as scrypt hashes; five wrong tries pause an email for 15 minutes). With [Privy](https://privy.io) configured, people can also use an email one-time code or a passkey, with no password and no seed phrase. The server checks Privy's signature on the identity token, then sets its own session cookie (`kw_session`, HttpOnly, 7 days).
+- **Workspaces:** after signing up you create a **Household** or **Business** workspace. One login can own both (up to 5) and switch from the workspace menu in the sidebar. Each workspace is its own member, with its own Solana wallet, ledger, balances and bills: the first uses the wallet Privy creates at signup, and each further workspace gets an additional embedded wallet. The server only accepts a wallet that appears in Privy's signed token and isn't used by another workspace.
 - **Permissions:** pages and actions always use the open workspace. Members only see and change their own data; `?as=` and `/admin` are for Stadtwerk staff.
 - **Deleting an account** (`/account`) needs a fresh check first: Privy logins log in again (the token must be under 5 minutes old), and demo accounts enter a 6-digit code. Then you type DELETE. It's refused while energy is unsettled, a roof you host or an investment is still open, or it's the last Stadtwerk staff login. Deleting removes the login (and the Privy user), closes every workspace and removes names, rules and business details. Settled payments, readings and allocations stay anonymously, as billing records.
 
@@ -110,7 +182,7 @@ In the demo, wallets are server-held, so the receiver page has buttons to top up
 
 ## AI trading agents
 
-`/agent` (**AI agent** in the top bar) is each workspace's trading agent. It runs inside the 15-minute pipeline, before the meters are read (`agentControls` in `lib/agents/run.ts`). Members switch each part on themselves, and their own rules stay the limits.
+`/agent` (**AI agent** in the sidebar) is each workspace's trading agent. It runs inside the 15-minute pipeline, before the meters are read (`agentControls` in `lib/agents/run.ts`). Members switch each part on themselves, and their own rules stay the limits.
 
 **How it decides: forecasts, not rules of thumb.** The price forecast is the market itself, run a day ahead on every home's learned forecast (`planAhead` with `marginal: true`). For each quarter-hour it gives what one more kWh would sell for and what one more would cost, found by adding a small probe offer or bid to the auction (`clearMarket` in `lib/market.ts`). It runs twice: first as if nobody had an agent, then with the battery agents acting on those prices, so each agent also expects what the others will do. The forecast is refreshed every hour.
 
@@ -153,7 +225,7 @@ Setup: install Ollama, run `ollama serve`, then `ollama pull qwen2.5:7b` (4.7 GB
 
 ## Federation of energy communities
 
-`/federation` (**Federation** in the top bar). What a community's members can't share among themselves is matched with neighbouring energy communities: leftover surplus goes to a community that is short, and missing energy comes from one with surplus. The Stadtwerk switches it on and chooses, per community, paid trades or energy credits.
+`/federation` (**Neighbouring communities** in the sidebar). What a community's members can't share among themselves is matched with neighbouring energy communities: leftover surplus goes to a community that is short, and missing energy comes from one with surplus. The Stadtwerk switches it on and chooses, per community, paid trades or energy credits.
 
 **Grid distance decides, not chains of contracts.** Power always flows through the one connected grid, so "A gets from B, B gets from C" nets out to C supplying A. A chain uses no less grid and can't stretch the legal limit. Instead, every neighbour has a place in the grid (`lib/federation/topology.ts`), and the model always prefers the nearest one that is allowed:
 
@@ -199,7 +271,7 @@ It uses MapLibre GL 5 with free OpenFreeMap tiles (no API key) and deck.gl for t
 
 ## Monthly statements
 
-`/statements` (also in the top bar and the workspace menu) shows one statement per workspace and month, with a PDF download (`/statements/pdf?month=YYYY-MM`, optional `&lang=de|en`):
+`/statements` (in the sidebar) shows one statement per workspace and month, with a PDF download (`/statements/pdf?month=YYYY-MM`, optional `&lang=de|en`):
 
 - energy bought from and sold to neighbours, per price, with kWh and amounts;
 - VAT: amounts are gross, and the statement shows the 19% VAT they include. Households' sales carry no VAT (small-business rule, §19 UStG); businesses' sales do;
@@ -211,7 +283,7 @@ The numbers come from the ledger (`lib/statements/compute.ts`, pure and unit-tes
 
 ## Languages
 
-The interface is in German and English. The first visit follows the browser's languages; the DE | EN switch in the top bar saves the choice in a cookie (`kw_lang`). All text lives in `lib/i18n/messages/en.ts` and `de.ts`. TypeScript checks that both have the same keys, so a missing German string is a type error. Numbers, money and dates follow the language (`1.234,50 €` and `Do., 1. Okt.` in German), always in the community's time zone. The data layer returns codes (statuses, rejection reasons, deletion blockers), so stored reasons also show in either language.
+The interface is in German and English. The first visit follows the browser's languages; the DE | EN switch (top bar of the public pages, bottom of the sidebar) saves the choice in a cookie (`kw_lang`). All text lives in `lib/i18n/messages/en.ts` and `de.ts`. TypeScript checks that both have the same keys, so a missing German string is a type error. Numbers, money and dates follow the language (`1.234,50 €` and `Do., 1. Okt.` in German), always in the community's time zone. The data layer returns codes (statuses, rejection reasons, deletion blockers), so stored reasons also show in either language.
 
 ## Scripts
 
@@ -254,7 +326,9 @@ A scripted cloud passes between 14:00 and 15:30, so the dashboards and switching
 ## Project layout
 
 ```
-app/              pages: overview, seller, buyer, sme, projects, admin
+app/(site)/       public pages: landing, login, sign-up, live demo, public record
+app/(app)/        logged-in pages: seller, buyer, sme, agent, projects, map, admin…
+components/shell/ sidebar, site header and footer, Product | Demo switch
 components/       shared UI
 db/               Drizzle schema and SQLite client
 lib/sim/          meter simulator, battery model, clock
@@ -265,7 +339,7 @@ lib/solana/       devnet wallets and payout transactions
 lib/forecast/     battery forecast, 24-hour supply plan, supplier availability
 lib/dashboard/    data for each page
 lib/market.ts     rules that turn meter values into supplies and demands
-scripts/          setup-devnet, seed, run-sim
+scripts/          setup-devnet, seed, run-sim, init-prod, seed-prod-fake
 tests/            unit tests
 ```
 
